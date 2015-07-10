@@ -94,9 +94,10 @@ const prog_char AP_GPS_NMEA::_initialisation_blob[] PROGMEM = SIRF_INIT_MSG MTK_
 
 // NMEA message identifiers ////////////////////////////////////////////////////
 //
-const char AP_GPS_NMEA::_gprmc_string[] PROGMEM = "GPRMC";
-const char AP_GPS_NMEA::_gpgga_string[] PROGMEM = "GPGGA";
-const char AP_GPS_NMEA::_gpvtg_string[] PROGMEM = "GPVTG";
+const char AP_GPS_NMEA::_gprmc_string[]   PROGMEM = "GPRMC";
+const char AP_GPS_NMEA::_gpgga_string[]   PROGMEM = "GPGGA";
+const char AP_GPS_NMEA::_gpvtg_string[]   PROGMEM = "GPVTG";
+const char AP_GPS_NMEA::_perdcrv_string[] PROGMEM = "PERDCRV";
 
 // Convenience macros //////////////////////////////////////////////////////////
 //
@@ -110,7 +111,8 @@ AP_GPS_NMEA::AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDr
     _sentence_type(0),
     _term_number(0),
     _term_offset(0),
-    _gps_data_good(false)
+    _gps_data_good(false),
+    _have_perdcrv(false)
 {
     gps.send_blob_start(state.instance, _initialisation_blob, sizeof(_initialisation_blob));
     // this guarantees that _term is always nul terminated
@@ -301,7 +303,8 @@ bool AP_GPS_NMEA::_term_complete()
                     state.last_gps_time_ms = hal.scheduler->millis();
                     // To-Do: add support for proper reporting of 2D and 3D fix
                     state.status           = AP_GPS::GPS_OK_FIX_3D;
-                    fill_3d_velocity();
+                    if(!_have_perdcrv)
+                        fill_3d_velocity();
                     break;
                 case _GPS_SENTENCE_GPGGA:
                     state.location.alt  = _new_altitude;
@@ -316,6 +319,12 @@ bool AP_GPS_NMEA::_term_complete()
                     state.ground_speed     = _new_speed*0.01f;
                     state.ground_course_cd = _new_course;
                     // VTG has no fix indicator, can't change fix status
+                    break;
+                case _GPS_SENTENCE_PERDCRV:
+                    state.velocity.x = _new_velocity_x*0.01f;
+                    state.velocity.y = _new_velocity_y*0.01f;
+                    state.velocity.z = _new_velocity_z*0.01f;
+                    state.have_vertical_velocity = true;
                     break;
                 }
             } else {
@@ -348,6 +357,10 @@ bool AP_GPS_NMEA::_term_complete()
             // unless it tells us otherwise.
             _last_GPVTG_ms = hal.scheduler->millis();
             _gps_data_good = true;
+        } else if (!strcmp_P(_term, _perdcrv_string)) {
+            _sentence_type = _GPS_SENTENCE_PERDCRV;
+            _gps_data_good = true;
+            _have_perdcrv = true;
         } else {
             _sentence_type = _GPS_SENTENCE_OTHER;
         }
@@ -418,6 +431,15 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_GPRMC + 8: // Course (GPRMC)
         case _GPS_SENTENCE_GPVTG + 1: // Course (VTG)
             _new_course = _parse_decimal_100();
+            break;
+        case _GPS_SENTENCE_PERDCRV + 3: // Velocity x (PERDCRV)
+            _new_velocity_x = _parse_decimal_100();
+            break;
+        case _GPS_SENTENCE_PERDCRV + 4: // Velocity y (PERDCRV)
+            _new_velocity_y = _parse_decimal_100();
+            break;
+        case _GPS_SENTENCE_PERDCRV + 5:
+            _new_velocity_z = -_parse_decimal_100(); // Velocity z (PERDCRV)
             break;
         }
     }
