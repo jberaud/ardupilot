@@ -377,7 +377,7 @@ void LinuxRCOutput_Bebop::_run_rcout()
         pthread_mutex_lock(&_mutex);
         ret = clock_gettime(CLOCK_MONOTONIC, &ts);
         if (ret != 0)
-            hal.console->println_P("RCOutput_Bebop: bad checksum in obs data");
+            hal.console->printf("RCOutput_Bebop: couldn't get clock time");
 
         if (ts.tv_nsec > (1000000000 - BEBOP_BLDC_TIMEOUT_NS))
         {
