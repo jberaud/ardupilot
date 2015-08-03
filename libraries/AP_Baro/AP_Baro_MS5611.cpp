@@ -223,7 +223,8 @@ void AP_Baro_MS56XX::_init()
     hal.scheduler->resume_timer_procs();
 
     if (_use_timer) {
-        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, void));
+        /* timer needs to be called every 10ms so set the freq_div to 10 */
+        _timesliced = hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, void), 10);
     }
 }
 
@@ -302,18 +303,22 @@ bool AP_Baro_MS5637::_read_prom(uint16_t prom[8])
     return crc_read == crc4(prom);
 }
 
+void AP_Baro_MS56XX::_timer(void)
+{
+    if(_timesliced ||
+       AP_HAL::micros() - _last_timer >= 10000) {
+        _read_from_device();
+        _last_timer = AP_HAL::micros();
+    }
+}
+
 /*
   Read the sensor. This is a state machine
   We read one time Temperature (state=1) and then 4 times Pressure (states 2-5)
   temperature does not change so quickly...
 */
-void AP_Baro_MS56XX::_timer(void)
+void AP_Baro_MS56XX::_read_from_device(void)
 {
-    // Throttle read rate to 100hz maximum.
-    if (AP_HAL::micros() - _last_timer < 10000) {
-        return;
-    }
-
     if (!_serial->sem_take_nonblocking()) {
         return;
     }
@@ -373,7 +378,6 @@ void AP_Baro_MS56XX::_timer(void)
         }
     }
 
-    _last_timer = AP_HAL::micros();
     _serial->sem_give();
 }
 
@@ -544,6 +548,6 @@ void AP_Baro_MS56XX::accumulate(void)
     if (!_use_timer) {
         // the timer isn't being called as a timer, so we need to call
         // it in accumulate()
-        _timer();
+        _read_from_device();
     }
 }

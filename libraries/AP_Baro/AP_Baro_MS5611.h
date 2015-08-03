@@ -84,6 +84,7 @@ protected:
     virtual void _calculate() = 0;
     virtual bool _read_prom(uint16_t prom[8]);
     void _timer();
+    void _read_from_device();
 
     AP_SerialBus *_serial;
 
@@ -94,6 +95,7 @@ protected:
     volatile uint32_t        _s_D1, _s_D2;
     uint8_t                  _state;
     uint32_t                 _last_timer;
+    bool                     _timesliced;
 
     bool _use_timer;
 
