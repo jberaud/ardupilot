@@ -98,6 +98,8 @@ const char AP_GPS_NMEA::_gprmc_string[]   PROGMEM = "GPRMC";
 const char AP_GPS_NMEA::_gpgga_string[]   PROGMEM = "GPGGA";
 const char AP_GPS_NMEA::_gpvtg_string[]   PROGMEM = "GPVTG";
 const char AP_GPS_NMEA::_perdcrv_string[] PROGMEM = "PERDCRV";
+const char AP_GPS_NMEA::_gnrmc_string[]   PROGMEM = "GNRMC";
+const char AP_GPS_NMEA::_gngns_string[]   PROGMEM = "GNGNS";
 
 // Convenience macros //////////////////////////////////////////////////////////
 //
@@ -255,33 +257,6 @@ uint32_t AP_GPS_NMEA::_parse_degrees()
     return ret;
 }
 
-/*
-  see if we have a new set of NMEA messages
- */
-bool AP_GPS_NMEA::_have_new_message()
-{
-    if (_last_GPRMC_ms == 0 ||
-        _last_GPGGA_ms == 0) {
-        return false;
-    }
-    uint32_t now = hal.scheduler->millis();
-    if (now - _last_GPRMC_ms > 150 ||
-        now - _last_GPGGA_ms > 150) {
-        return false;
-    }
-    if (_last_GPVTG_ms != 0 && 
-        now - _last_GPVTG_ms > 150) {
-        return false;
-    }
-    // prevent these messages being used again
-    if (_last_GPVTG_ms != 0) {
-        _last_GPVTG_ms = 1;
-    }
-    _last_GPGGA_ms = 1;
-    _last_GPRMC_ms = 1;
-    return true;
-}
-
 // Processes a just-completed term
 // Returns true if new sentence has just passed checksum test and is validated
 bool AP_GPS_NMEA::_term_complete()
@@ -305,8 +280,9 @@ bool AP_GPS_NMEA::_term_complete()
                     state.status           = AP_GPS::GPS_OK_FIX_3D;
                     if(!_have_perdcrv)
                         fill_3d_velocity();
-                    break;
+                    return true;
                 case _GPS_SENTENCE_GPGGA:
+                case _GPS_SENTENCE_GNGNS:
                     state.location.alt  = _new_altitude;
                     state.location.lat  = _new_latitude;
                     state.location.lng  = _new_longitude;
@@ -334,6 +310,7 @@ bool AP_GPS_NMEA::_term_complete()
             } else {
                 switch (_sentence_type) {
                 case _GPS_SENTENCE_GPRMC:
+                    return true;
                 case _GPS_SENTENCE_GPGGA:
                     // Only these sentences give us information about
                     // fix status.
@@ -341,7 +318,7 @@ bool AP_GPS_NMEA::_term_complete()
                 }
             }
             // see if we got a good message
-            return _have_new_message();
+            return false;
         }
         // we got a bad message, ignore it
         return false;
@@ -351,20 +328,23 @@ bool AP_GPS_NMEA::_term_complete()
     if (_term_number == 0) {
         if (!strcmp_P(_term, _gprmc_string)) {
             _sentence_type = _GPS_SENTENCE_GPRMC;
-            _last_GPRMC_ms = hal.scheduler->millis();
         } else if (!strcmp_P(_term, _gpgga_string)) {
             _sentence_type = _GPS_SENTENCE_GPGGA;
-            _last_GPGGA_ms = hal.scheduler->millis();
         } else if (!strcmp_P(_term, _gpvtg_string)) {
             _sentence_type = _GPS_SENTENCE_GPVTG;
             // VTG may not contain a data qualifier, presume the solution is good
             // unless it tells us otherwise.
-            _last_GPVTG_ms = hal.scheduler->millis();
             _gps_data_good = true;
         } else if (!strcmp_P(_term, _perdcrv_string)) {
             _sentence_type = _GPS_SENTENCE_PERDCRV;
             _gps_data_good = true;
             _have_perdcrv = true;
+        } else if (!strcmp_P(_term, _gnrmc_string)) {
+            /* GNRMC has exactly the same format as GPRMC */
+            _sentence_type = _GPS_SENTENCE_GPRMC;
+        } else if (!strcmp_P(_term, _gngns_string)) {
+            /* GNGNS has exactly the same format as GPGGA */
+            _sentence_type = _GPS_SENTENCE_GNGNS;
         } else {
             _sentence_type = _GPS_SENTENCE_OTHER;
         }
@@ -383,12 +363,15 @@ bool AP_GPS_NMEA::_term_complete()
             _gps_data_good = _term[0] > '0';
             break;
         case _GPS_SENTENCE_GPVTG + 9: // validity (VTG) (we may not see this field)
+        case _GPS_SENTENCE_GNGNS + 6:
             _gps_data_good = _term[0] != 'N';
             break;
         case _GPS_SENTENCE_GPGGA + 7: // satellite count (GGA)
+        case _GPS_SENTENCE_GNGNS + 7: // satellite count (GNS)
             _new_satellite_count = atol(_term);
             break;
         case _GPS_SENTENCE_GPGGA + 8: // HDOP (GGA)
+        case _GPS_SENTENCE_GNGNS + 8: // HDOP (GNS)
             _new_hdop = _parse_decimal_100();
             break;
 
@@ -396,6 +379,7 @@ bool AP_GPS_NMEA::_term_complete()
         //
         case _GPS_SENTENCE_GPRMC + 1: // Time (RMC)
         case _GPS_SENTENCE_GPGGA + 1: // Time (GGA)
+        case _GPS_SENTENCE_GNGNS + 1: // HDOP (GNS)
             _new_time = _parse_decimal_100();
             break;
         case _GPS_SENTENCE_GPRMC + 9: // Date (GPRMC)
@@ -406,23 +390,28 @@ bool AP_GPS_NMEA::_term_complete()
         //
         case _GPS_SENTENCE_GPRMC + 3: // Latitude
         case _GPS_SENTENCE_GPGGA + 2:
+        case _GPS_SENTENCE_GNGNS + 2:
             _new_latitude = _parse_degrees();
             break;
         case _GPS_SENTENCE_GPRMC + 4: // N/S
         case _GPS_SENTENCE_GPGGA + 3:
+        case _GPS_SENTENCE_GNGNS + 3:
             if (_term[0] == 'S')
                 _new_latitude = -_new_latitude;
             break;
         case _GPS_SENTENCE_GPRMC + 5: // Longitude
         case _GPS_SENTENCE_GPGGA + 4:
+        case _GPS_SENTENCE_GNGNS + 4:
             _new_longitude = _parse_degrees();
             break;
         case _GPS_SENTENCE_GPRMC + 6: // E/W
         case _GPS_SENTENCE_GPGGA + 5:
+        case _GPS_SENTENCE_GNGNS + 5:
             if (_term[0] == 'W')
                 _new_longitude = -_new_longitude;
             break;
         case _GPS_SENTENCE_GPGGA + 9: // Altitude (GPGGA)
+        case _GPS_SENTENCE_GNGNS + 9: // Altitude (GNGNS)
             _new_altitude = _parse_decimal_100();
             break;
 

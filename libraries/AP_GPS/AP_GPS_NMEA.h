@@ -70,6 +70,7 @@ private:
         _GPS_SENTENCE_GPGGA   = 64,
         _GPS_SENTENCE_GPVTG   = 96,
         _GPS_SENTENCE_PERDCRV = 128,
+        _GPS_SENTENCE_GNGNS   = 160,
         _GPS_SENTENCE_OTHER   = 0
     };
 
@@ -165,6 +166,8 @@ private:
     static const prog_char _gpgga_string[];
     static const prog_char _gpvtg_string[];
     static const prog_char _perdcrv_string[];
+    static const prog_char _gnrmc_string[];
+    static const prog_char _gngns_string[];
     //@}
 
     static const prog_char _initialisation_blob[];
