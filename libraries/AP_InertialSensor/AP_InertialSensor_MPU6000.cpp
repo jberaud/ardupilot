@@ -455,7 +455,7 @@ bool AP_InertialSensor_MPU6000::_init_sensor(void)
         if (success) {
             hal.scheduler->delay(5+2);
             if (!_bus_sem->take(100)) {
-                return false;
+                goto fail;
             }
             if (_data_ready()) {
                 _bus_sem->give();
@@ -465,7 +465,7 @@ bool AP_InertialSensor_MPU6000::_init_sensor(void)
         }
         if (tries++ > 5) {
             hal.console->print_P(PSTR("failed to boot MPU6000 5 times")); 
-            return false;
+            goto fail;
         }
     } while (1);
 
@@ -483,6 +483,9 @@ bool AP_InertialSensor_MPU6000::_init_sensor(void)
 #endif
 
     return true;
+fail:
+    hal.scheduler->resume_timer_procs();
+    return false;
 }
 /*
   process any 
