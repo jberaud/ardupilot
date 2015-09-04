@@ -8,6 +8,12 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
+LinuxRCInput_UDP::LinuxRCInput_UDP() :
+    _port(0),
+    _last_buf_ts(0),
+    _last_buf_seq(0)
+{}
+
 void LinuxRCInput_UDP::init(void *)
 {
     _port = RCINPUT_UDP_DEF_PORT;
@@ -22,23 +28,27 @@ void LinuxRCInput_UDP::init(void *)
 
 void LinuxRCInput_UDP::_timer_tick(void)
 {
-    uint16_t pwms[LINUX_RC_INPUT_NUM_CHANNELS];
-    ssize_t len;
     uint64_t delay;
+    uint16_t seq_inc;
 
     /* Read from udp */
-    while ((len = _socket.recv(&_buf, sizeof(_buf), 10)) == sizeof(_buf) &&
-            len != -1) {
+    while (_socket.recv(&_buf, sizeof(_buf), 10) == sizeof(_buf)) {
         if (_buf.version != RCINPUT_UDP_VERSION) {
             hal.console->printf("bad protocol version for UDP RCInput\n");
             return;
         }
-        if ((delay = _buf.timestamp_us - _last_buf_ts) > 100000) {
+        if (_last_buf_ts != 0 &&
+            (delay = _buf.timestamp_us - _last_buf_ts) > 100000) {
             hal.console->printf("no rc cmds received for %llu\n", delay);
         }
         _last_buf_ts = _buf.timestamp_us;
-        memcpy(pwms, _buf.pwms, sizeof(pwms));
-        _update_periods(pwms, LINUX_RC_INPUT_NUM_CHANNELS);
+
+        if ((seq_inc = _buf.sequence - _last_buf_seq) > 10) {
+            hal.console->printf("gap in rc cmds : %u\n", seq_inc);
+        }
+        _last_buf_seq = _buf.sequence;
+
+        _update_periods(_buf.pwms, RCINPUT_UDP_NUM_CHANNELS);
     }
 }
 #endif
