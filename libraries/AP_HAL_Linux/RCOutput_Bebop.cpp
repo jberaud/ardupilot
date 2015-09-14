@@ -34,16 +34,6 @@ struct bldc_ref_speed_data {
 }__attribute__((packed));
 
 #define BEBOP_BLDC_GETOBSDATA 0x20
-struct bldc_obs_data {
-    uint16_t    rpm[BEBOP_BLDC_MOTORS_NUM];
-    uint16_t    batt_mv;
-    uint8_t     status;
-    uint8_t     error;
-    uint8_t     motors_err;
-    uint8_t     temp;
-    uint8_t     checksum;
-}__attribute__((packed));
-
 #define BEBOP_BLDC_TOGGLE_GPIO 0x4d
 #define BEBOP_BLDC_GPIO_RESET   (1 << 0)
 #define BEBOP_BLDC_GPIO_RED     (1 << 1)
@@ -95,11 +85,13 @@ LinuxRCOutput_Bebop::LinuxRCOutput_Bebop():
     _i2c_sem(NULL),
     _min_pwm(BEBOP_BLDC_MIN_PERIOD_US),
     _max_pwm(BEBOP_BLDC_MAX_PERIOD_US),
-    _state(BEBOP_BLDC_STOPPED)
+    _state(BEBOP_BLDC_STOPPED),
+    _last_obs_time(0)
 {
     memset(_period_us, 0, sizeof(_period_us));
     memset(_request_period_us, 0, sizeof(_request_period_us));
     memset(_rpm, 0, sizeof(_rpm));
+    memset(&_obs_data, 0, sizeof(_obs_data));
 }
 
 uint8_t LinuxRCOutput_Bebop::_checksum(uint8_t *data, unsigned int len)
@@ -147,39 +139,47 @@ void LinuxRCOutput_Bebop::_set_ref_speed(uint16_t rpm[BEBOP_BLDC_MOTORS_NUM])
     _i2c_sem->give();
 }
 
-int LinuxRCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
+int LinuxRCOutput_Bebop::_update_obs_data()
 {
-    struct bldc_obs_data data;
-    int i;
-
-    memset(&data, 0, sizeof(data));
+    memset(&_obs_data, 0, sizeof(_obs_data));
     if (!_i2c_sem->take(0))
         return -EBUSY;
 
     hal.i2c1->readRegisters(BEBOP_BLDC_I2C_ADDR, BEBOP_BLDC_GETOBSDATA,
-                            sizeof(data), (uint8_t *)&data);
+                            sizeof(_obs_data), (uint8_t *)&_obs_data);
+
+
+    if (_obs_data.checksum != _checksum((uint8_t *)&_obs_data, sizeof(_obs_data) - 1))
+        hal.console->printf("RCOutput_Bebop: bad checksum in obs data");
+    _last_obs_time = hal.scheduler->micros();
 
     _i2c_sem->give();
+    return 0;
+}
 
-    if (data.checksum != _checksum((uint8_t *)&data, sizeof(data) - 1))
-        hal.console->printf("RCOutput_Bebop: bad checksum in obs data");
+int LinuxRCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
+{
+    if (!_i2c_sem->take(0))
+        return -EBUSY;
 
     /* fill obs class */
-    for (i = 0; i < BEBOP_BLDC_MOTORS_NUM; i++) {
+    for (int i = 0; i < BEBOP_BLDC_MOTORS_NUM; i++) {
         /* extract 'rpm saturation bit' */
-        obs.rpm_saturated[i] = (data.rpm[i] & (1 << 7)) ? 1 : 0;
+        obs.rpm_saturated[i] = (_obs_data.rpm[i] & (1 << 7)) ? 1 : 0;
         /* clear 'rpm saturation bit' */
-        data.rpm[i] &= (uint16_t)(~(1 << 7));
-        obs.rpm[i] = be16toh(data.rpm[i]);
+        _obs_data.rpm[i] &= (uint16_t)(~(1 << 7));
+        obs.rpm[i] = be16toh(_obs_data.rpm[i]);
         if (obs.rpm[i] == 0)
             obs.rpm_saturated[i] = 0;
     }
 
-    obs.batt_mv = be16toh(data.batt_mv);
-    obs.status = data.status;
-    obs.error = data.error;
-    obs.motors_err = data.motors_err;
-    obs.temperature = data.temp;
+    obs.batt_mv = be16toh(_obs_data.batt_mv);
+    obs.status = _obs_data.status;
+    obs.error = _obs_data.error;
+    obs.motors_err = _obs_data.motors_err;
+    obs.temperature = _obs_data.temp;
+    obs.timestamp_ms = _last_obs_time / 1000;
+    _i2c_sem->give();
     return 0;
 }
 
@@ -416,6 +416,11 @@ void LinuxRCOutput_Bebop::_run_rcout()
                 _start_prop();
         }
         _set_ref_speed(_rpm);
+
+        /* Update obs data every 100ms 
+         * This is needed by batt monitor and RPM monitor */
+        if (hal.scheduler->micros() - _last_obs_time > 100000)
+           _update_obs_data();
     }
 }
 #endif

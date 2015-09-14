@@ -36,6 +36,17 @@ enum bebop_bldc_sound {
 #define BEBOP_BLDC_ERRNO_LIPO           10
 #define BEBOP_BLDC_ERRNO_MOTOR_HW       11
 
+struct bldc_obs_data {
+    uint16_t    rpm[BEBOP_BLDC_MOTORS_NUM];
+    uint16_t    batt_mv;
+    uint8_t     status;
+    uint8_t     error;
+    uint8_t     motors_err;
+    uint8_t     temp;
+    uint8_t     checksum;
+}__attribute__((packed));
+
+
 class BebopBLDC_ObsData {
 public:
     uint16_t rpm[BEBOP_BLDC_MOTORS_NUM];
@@ -45,6 +56,7 @@ public:
     uint8_t error;
     uint8_t motors_err;
     uint8_t temperature;
+    uint32_t timestamp_ms;
 };
 
 class Linux::LinuxRCOutput_Bebop : public AP_HAL::RCOutput {
@@ -71,6 +83,8 @@ private:
     uint16_t _min_pwm;
     uint16_t _max_pwm;
     uint8_t  _state;
+    uint64_t _last_obs_time;
+    struct bldc_obs_data _obs_data;
 
     uint8_t _checksum(uint8_t *data, unsigned int len);
     void _start_prop();
@@ -80,6 +94,7 @@ private:
     void _clear_error();
     void _play_sound(uint8_t sound);
     uint16_t _period_us_to_rpm(uint16_t period_us);
+    int _update_obs_data();
 
     /* thread related members */
     pthread_t _thread;
