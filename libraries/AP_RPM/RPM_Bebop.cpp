@@ -14,28 +14,33 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __AP_RPM_BACKEND_H__
-#define __AP_RPM_BACKEND_H__
-
-#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include "AP_RPM.h"
 
-class AP_RPM_Backend
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+
+#include "RPM_Bebop.h"
+#include <AP_HAL_Linux/RCOutput_Bebop.h>
+
+extern const AP_HAL::HAL& hal;
+
+AP_RPM_Bebop::AP_RPM_Bebop(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State* _state) :
+    AP_RPM_Backend(_ap_rpm, instance, _state)
 {
-public:
-    // constructor. This incorporates initialisation as well.
-	AP_RPM_Backend(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State* _state);
+    _rcout = (Linux::LinuxRCOutput_Bebop *)hal.rcout;
+}
 
-    // we declare a virtual destructor so that RPM drivers can
-    // override with a custom destructor if need be
-    virtual ~AP_RPM_Backend(void) {}
+void AP_RPM_Bebop::update(void) {
+    BebopBLDC_ObsData data;
 
-    // update the state structure. All backends must implement this.
-    virtual void update() = 0;
+    if (_rcout->read_obs_data(data) != 0) {
+        hal.console->printf("rpm bebop : couldn't read obs data\n");
+        return;
+    }
 
-protected:
-    AP_RPM &ap_rpm;
-    AP_RPM::RPM_State *state;
-};
-#endif // __AP_RPM_BACKEND_H__
+    for (unsigned int i=0; i<BEBOP_BLDC_MOTORS_NUM; i++) {
+        state[i].rate_rpm = data.rpm[i];
+        state[i].instance = 0;
+        state[i].last_reading_ms = data.timestamp_ms;
+    }
+}
+#endif

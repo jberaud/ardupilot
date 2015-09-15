@@ -16,6 +16,7 @@
 
 #include "AP_RPM.h"
 #include "RPM_PX4_PWM.h"
+#include "RPM_Bebop.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -24,7 +25,7 @@ const AP_Param::GroupInfo AP_RPM::var_info[] PROGMEM = {
     // @Param: _TYPE
     // @DisplayName: RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:PX4-PWM
+    // @Values: 0:None,1:PX4-PWM,2:BEBOP
     AP_GROUPINFO("_TYPE",    0, AP_RPM, _type[0], 0),
 
     // @Param: _SCALING
@@ -76,7 +77,15 @@ void AP_RPM::init(void)
 
         if (type == RPM_TYPE_PX4_PWM) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_RPM_PX4_PWM(*this, instance, state[instance]);
+            drivers[instance] = new AP_RPM_PX4_PWM(*this, instance, &state[instance]);
+        }
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+        uint8_t type = _type[num_instances];
+        uint8_t instance = num_instances;
+
+        if (type == RPM_TYPE_BEBOP) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_RPM_Bebop(*this, instance, state);
         }
 #endif
         if (drivers[i] != NULL) {

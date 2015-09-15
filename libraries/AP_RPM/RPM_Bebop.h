@@ -14,28 +14,24 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __AP_RPM_BACKEND_H__
-#define __AP_RPM_BACKEND_H__
+#ifndef __AP_RPM_BEBOP_H__
+#define __AP_RPM_BEBOP_H_h
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include "AP_RPM.h"
 
-class AP_RPM_Backend
+#include "RPM_Backend.h"
+#include <AP_HAL_Linux/RCOutput_Bebop.h>
+
+class AP_RPM_Bebop : public AP_RPM_Backend
 {
 public:
-    // constructor. This incorporates initialisation as well.
-	AP_RPM_Backend(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State* _state);
+    AP_RPM_Bebop(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State* _state);
+    // update state
+    void update(void);
 
-    // we declare a virtual destructor so that RPM drivers can
-    // override with a custom destructor if need be
-    virtual ~AP_RPM_Backend(void) {}
-
-    // update the state structure. All backends must implement this.
-    virtual void update() = 0;
-
-protected:
-    AP_RPM &ap_rpm;
-    AP_RPM::RPM_State *state;
+private:
+    Linux::LinuxRCOutput_Bebop *_rcout;
 };
-#endif // __AP_RPM_BACKEND_H__
+
+#endif

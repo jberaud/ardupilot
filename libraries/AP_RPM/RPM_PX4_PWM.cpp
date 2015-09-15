@@ -43,7 +43,7 @@ extern const AP_HAL::HAL& hal;
 /* 
    open the sensor in constructor
 */
-AP_RPM_PX4_PWM::AP_RPM_PX4_PWM(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state) :
+AP_RPM_PX4_PWM::AP_RPM_PX4_PWM(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State* _state) :
 	AP_RPM_Backend(_ap_rpm, instance, _state)
 {
     _fd = open(PWMIN0_DEVICE_PATH, O_RDONLY);
@@ -80,7 +80,7 @@ void AP_RPM_PX4_PWM::update(void)
 
     struct pwm_input_s pwm;
     uint16_t count = 0;
-    const float scaling = ap_rpm._scaling[state.instance];
+    const float scaling = ap_rpm._scaling[state[0].instance];
     float sum = 0;
 
     while (::read(_fd, &pwm, sizeof(pwm)) == sizeof(pwm)) {
@@ -92,8 +92,8 @@ void AP_RPM_PX4_PWM::update(void)
     }
 
     if (count != 0) {
-        state.rate_rpm = scaling * sum / count;
-        state.last_reading_ms = hal.scheduler->millis();
+        state[0].rate_rpm = scaling * sum / count;
+        state[0].last_reading_ms = hal.scheduler->millis();
     }
 }
 

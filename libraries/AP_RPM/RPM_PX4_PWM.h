@@ -24,7 +24,7 @@ class AP_RPM_PX4_PWM : public AP_RPM_Backend
 {
 public:
     // constructor
-    AP_RPM_PX4_PWM(AP_RPM &ranger, uint8_t instance, AP_RPM::RPM_State &_state);
+    AP_RPM_PX4_PWM(AP_RPM &ranger, uint8_t instance, AP_RPM::RPM_State* _state);
 
     // destructor
     ~AP_RPM_PX4_PWM(void);
