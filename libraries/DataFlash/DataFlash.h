@@ -683,6 +683,8 @@ struct PACKED log_RPM {
     uint64_t time_us;
     float rpm1;
     float rpm2;
+    float rpm3;
+    float rpm4;
 };
 
 /*
