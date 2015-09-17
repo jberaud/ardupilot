@@ -11,6 +11,7 @@
 #include "../AP_HAL/GPIO.h"
 #include "../AP_HAL/RCInput.h"
 #include "../AP_HAL/RCOutput.h"
+#include "../AP_HAL/Heat.h"
 
 class AP_HAL::HAL {
 public:
@@ -30,6 +31,7 @@ public:
         AP_HAL::RCInput*    _rcin,
         AP_HAL::RCOutput*   _rcout,
         AP_HAL::Scheduler*  _scheduler,
+        AP_HAL::Heat*       _heat,
         AP_HAL::Util*       _util)
         :
         uartA(_uartA),
@@ -48,6 +50,7 @@ public:
         rcin(_rcin),
         rcout(_rcout),
         scheduler(_scheduler),
+        heat(_heat),
         util(_util)
     {}
 
@@ -69,6 +72,7 @@ public:
     AP_HAL::RCInput*    rcin;
     AP_HAL::RCOutput*   rcout;
     AP_HAL::Scheduler*  scheduler;
+    AP_HAL::Heat*       heat;
     AP_HAL::Util*       util;
 };
 

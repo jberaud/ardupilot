@@ -21,6 +21,7 @@
 #include "Scheduler.h"
 #include "Semaphores.h"
 #include "Util.h"
+#include "Heat.h"
 
 #include "utility/Print.h"
 #include "utility/Stream.h"
