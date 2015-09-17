@@ -33,6 +33,7 @@ static Empty::EmptyGPIO emptyGPIO;
 static Empty::EmptySemaphore emptyI2Csemaphore;
 static Empty::EmptyI2CDriver emptyI2C(&emptyI2Csemaphore);
 static Empty::EmptySPIDeviceManager emptySPI;
+static Empty::EmptyHeat emptyHeat;
 
 static SITLUARTDriver sitlUart0Driver(0, &sitlState);
 static SITLUARTDriver sitlUart1Driver(1, &sitlState);
@@ -60,6 +61,7 @@ HAL_SITL::HAL_SITL() :
         &sitlRCInput,  /* rcinput */
         &sitlRCOutput, /* rcoutput */
         &sitlScheduler, /* scheduler */
+        &emptyHeat, /* heat */
         &utilInstance), /* util */
     _sitl_state(&sitlState)
 {}
