@@ -39,7 +39,8 @@ HAL_Empty::HAL_Empty() :
         &rcinDriver,
         &rcoutDriver,
         &schedulerInstance,
-        &utilInstance),
+        &heatDriver
+        &utilInstance)
     _member(new EmptyPrivateMember(123))
 {}
 
