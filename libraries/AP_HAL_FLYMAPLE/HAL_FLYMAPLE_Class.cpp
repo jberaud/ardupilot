@@ -40,6 +40,7 @@ static FLYMAPLEGPIO gpioDriver;
 static FLYMAPLERCInput rcinDriver;
 static FLYMAPLERCOutput rcoutDriver;
 static FLYMAPLEScheduler schedulerInstance;
+static Empty::EmptyHeat heatDriver;
 static FLYMAPLEUtil utilInstance;
 
 HAL_FLYMAPLE::HAL_FLYMAPLE() :
@@ -60,6 +61,7 @@ HAL_FLYMAPLE::HAL_FLYMAPLE() :
 	&rcinDriver,
 	&rcoutDriver,
         &schedulerInstance,
+        &heatDriver,
 	&utilInstance
 	)
 {}
