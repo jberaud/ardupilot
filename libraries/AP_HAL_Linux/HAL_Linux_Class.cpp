@@ -118,6 +118,14 @@ static LinuxRCOutput_Bebop rcoutDriver;
 static Empty::EmptyRCOutput rcoutDriver;
 #endif
 
+/*
+ * IMU Heater
+ */
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+static LinuxHeatPwm heatDriver("/sys/class/pwm/pwm_6", 20000, 6, 125000, 50);
+#else
+static Empty::EmptyHeat heatDriver;
+#endif
 static LinuxScheduler schedulerInstance;
 static LinuxUtil utilInstance;
 
@@ -145,6 +153,7 @@ HAL_Linux::HAL_Linux() :
         &rcinDriver,
         &rcoutDriver,
         &schedulerInstance,
+        &heatDriver,
         &utilInstance)
 {}
 
