@@ -42,6 +42,7 @@ static PX4RCOutput rcoutDriver;
 static PX4AnalogIn analogIn;
 static PX4Util utilInstance;
 static PX4GPIO gpioDriver;
+static Empty::EmptyHeat heatDriver;
 
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 #define UARTA_DEFAULT_DEVICE "/dev/ttyACM0"
@@ -82,6 +83,7 @@ HAL_PX4::HAL_PX4() :
         &rcinDriver,  /* rcinput */
         &rcoutDriver, /* rcoutput */
         &schedulerInstance, /* scheduler */
+        &heatDriver, /* heat */
         &utilInstance) /* util */
 {}
 
