@@ -18,11 +18,11 @@
 #define BEBOP_BLDC_CLOCKWISE 1
 #define BEBOP_BLDC_COUNTERCLOCKWISE 0
 
-static const uint8_t bebop_motors_bitmask = (BEBOP_BLDC_COUNTERCLOCKWISE  <<
+static const uint8_t bebop_motors_bitmask = (BEBOP_BLDC_CLOCKWISE  <<
     (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_LEFT_BACK)) |
-    (BEBOP_BLDC_CLOCKWISE << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_RIGHT_BACK))|
-    (BEBOP_BLDC_COUNTERCLOCKWISE  << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_RIGHT_FRONT))|
-    (BEBOP_BLDC_CLOCKWISE << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_LEFT_FRONT));
+    (BEBOP_BLDC_COUNTERCLOCKWISE << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_RIGHT_BACK))|
+    (BEBOP_BLDC_CLOCKWISE  << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_RIGHT_FRONT))|
+    (BEBOP_BLDC_COUNTERCLOCKWISE << (BEBOP_BLDC_MOTORS_NUM - 1 - BEBOP_BLDC_LEFT_FRONT));
 
 
 #define BEBOP_BLDC_SETREFSPEED 0x02
@@ -115,12 +115,14 @@ uint8_t LinuxRCOutput_Bebop::_checksum(uint8_t *data, unsigned int len)
 
 void LinuxRCOutput_Bebop::_start_prop()
 {
-    uint8_t data = BEBOP_BLDC_STARTPROP;
+    uint8_t data[2];
 
+    data[0] = BEBOP_BLDC_STARTPROP;
+    data[1] = bebop_motors_bitmask;
     if (!_i2c_sem->take(0))
         return;
 
-    hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, 1, &data);
+    hal.i2c1->write(BEBOP_BLDC_I2C_ADDR, 2, data);
 
     _i2c_sem->give();
     _state = BEBOP_BLDC_STARTED;
