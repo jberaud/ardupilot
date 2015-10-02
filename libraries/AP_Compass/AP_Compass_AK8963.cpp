@@ -178,7 +178,7 @@ bool AP_Compass_AK8963::init()
     set_dev_id(_compass_instance, _bus->get_dev_id());
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Compass_AK8963::_update, void));
 
-    set_milligauss_ratio(_compass_instance, 10.0f);
+    set_milligauss_ratio(_compass_instance, 1.0f);
     
     _bus_sem->give();
     hal.scheduler->resume_timer_procs();
@@ -276,7 +276,7 @@ void AP_Compass_AK8963::_update()
         goto fail;
     }
 
-    raw_field = Vector3f(mag_x, mag_y, mag_z);
+    raw_field = Vector3f(mag_x * 10.0, mag_y * 10.0, mag_z * 10);
     
     // rotate raw_field from sensor frame to body frame
     rotate_field(raw_field, _compass_instance);
