@@ -22,6 +22,7 @@
 #include "Scheduler.h"
 #include "Semaphores.h"
 #include "Util.h"
+#include "OpticalFlow.h"
 
 #include "utility/Print.h"
 #include "utility/Stream.h"

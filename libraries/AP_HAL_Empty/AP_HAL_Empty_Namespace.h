@@ -23,6 +23,7 @@ namespace Empty {
     class EmptyScheduler;
     class EmptyUtil;
     class EmptyPrivateMember;
+    class EmptyOpticalFlow;
 }
 
 #endif // __AP_HAL_EMPTY_NAMESPACE_H__

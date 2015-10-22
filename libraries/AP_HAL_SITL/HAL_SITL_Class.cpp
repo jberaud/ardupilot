@@ -35,6 +35,7 @@ static Empty::EmptyGPIO emptyGPIO;
 static Empty::EmptySemaphore emptyI2Csemaphore;
 static Empty::EmptyI2CDriver emptyI2C(&emptyI2Csemaphore);
 static Empty::EmptySPIDeviceManager emptySPI;
+static Empty::EmptyOpticalFlow opticalFlow;
 
 static SITLUARTDriver sitlUart0Driver(0, &sitlState);
 static SITLUARTDriver sitlUart1Driver(1, &sitlState);
@@ -62,7 +63,8 @@ HAL_SITL::HAL_SITL() :
         &sitlRCInput,  /* rcinput */
         &sitlRCOutput, /* rcoutput */
         &sitlScheduler, /* scheduler */
-        &utilInstance), /* util */
+        &utilInstance, /* util */
+        &opticalFlow), /* onboard optical flow */
     _sitl_state(&sitlState)
 {}
 
