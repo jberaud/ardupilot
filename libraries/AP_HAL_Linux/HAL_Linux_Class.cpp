@@ -145,7 +145,11 @@ static RCOutput_PCA9685 rcoutDriver(PCA9685_PRIMARY_ADDRESS, false, 0, MINNOW_GP
 static Empty::RCOutput rcoutDriver;
 #endif
 
-static Scheduler schedulerInstance;
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+static UltraSound_Bebop ultraSound;
+#endif
+
+static LinuxScheduler schedulerInstance;
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 static OpticalFlow_Onboard opticalFlow;
@@ -271,6 +275,9 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     uartA->begin(115200);    
     uartE->begin(115200);    
     analogin->init();
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+    ultraSound.init();
+#endif
     utilInstance.init(argc+gopt.optind-1, &argv[gopt.optind-1]);
 
     // NOTE: See commit 9f5b4ffca ("AP_HAL_Linux_Class: Correct
