@@ -83,7 +83,12 @@ HeatPwm::HeatPwm(const char* pwm_sysfs_path, float Kp, float Ki, uint32_t period
 
     _set_period(_period_ns);
     _set_duty(0);
-    _set_run();
+    _set_run(true);
+}
+
+HeatPwm::~HeatPwm()
+{
+    _set_run(false);
 }
 
 void HeatPwm::set_imu_temp(float current)
@@ -129,10 +134,16 @@ void HeatPwm::_set_period(uint32_t period)
     }
 }
 
-void HeatPwm::_set_run()
+void HeatPwm::_set_run(bool enable)
 {
-    if (dprintf(_run_fd, "1") < 0) {
-        perror("pwm set_run");
+    if (enable) {
+        if (dprintf(_run_fd, "1") < 0) {
+            perror("pwm set_run");
+        }
+    } else {
+        if (dprintf(_run_fd, "0") < 0) {
+            perror("pwm set_run");
+        }
     }
 }
 

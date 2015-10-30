@@ -23,6 +23,7 @@
 class Linux::HeatPwm : public Linux::Heat {
 public:
     HeatPwm(const char* pwm_sysfs_path, float Kp, float Ki,uint32_t period_ns, float target);
+    ~HeatPwm();
     void set_imu_temp(float current)override;
 
 private:
@@ -38,6 +39,6 @@ private:
 
     void _set_duty(uint32_t duty);
     void _set_period(uint32_t period);
-    void _set_run();
+    void _set_run(bool enable);
 };
 #endif
