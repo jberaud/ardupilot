@@ -33,14 +33,14 @@ public:
     class Frame {
     friend class VideoIn;
     public:
-        uint32_t width;
-        uint32_t height;
-        uint32_t pixelformat;
-        uint32_t bytesperline;
-        uint32_t sizeimage;
-        uint32_t timestamp;
-        uint32_t sequence;
-        void *data;
+        uint32_t width = 0;
+        uint32_t height = 0;
+        uint32_t pixelformat = 0;
+        uint32_t bytesperline = 0;
+        uint32_t sizeimage = 0;
+        uint32_t timestamp = 0;
+        uint32_t sequence = 0;
+        void *data = NULL;
     private:
         uint32_t buf_index;
     };

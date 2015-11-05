@@ -95,7 +95,7 @@ Flow_PX4::Flow_PX4(uint32_t width, float max_flow_pixel,
                    float bottom_flow_value_threshold,
                    float bottom_flow_hist_filter,
                    float bottom_flow_gyro_compensation,
-                   float gyro_compensation_threshold, float focal_length) :
+                   float gyro_compensation_threshold, float focal_length_px) :
     _width(width),
     _frame_size(width),
     _search_size(max_flow_pixel),
@@ -104,7 +104,7 @@ Flow_PX4::Flow_PX4(uint32_t width, float max_flow_pixel,
     _bottom_flow_hist_filter(bottom_flow_hist_filter),
     _bottom_flow_gyro_compensation(bottom_flow_gyro_compensation),
     _gyro_compensation_threshold(gyro_compensation_threshold),
-    _focal_length_mm(focal_length)
+    _focal_length_px(focal_length_px)
 {
 }
 
@@ -454,16 +454,16 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
 	const uint16_t hist_size = 2*(winmax-winmin+1)+1;
 
 	/* variables */
-	uint16_t pixLo = _search_size + 1;
-	uint16_t pixHi = _frame_size - (_search_size + 1) - TILE_SIZE;
+	uint16_t pixLo = _search_size;
+	uint16_t pixHi = _frame_size - (_search_size + 1);
 	uint16_t pixStep = (pixHi - pixLo) / NUM_BLOCKS + 1;
 	uint16_t i, j;
 	uint32_t acc[8]; // subpixels
 	uint16_t histx[hist_size]; // counter for x shift
 	uint16_t histy[hist_size]; // counter for y shift
-	int8_t  dirsx[64]; // shift directions in x
-	int8_t  dirsy[64]; // shift directions in y
-	uint8_t  subdirs[64]; // shift directions of best subpixels
+	int8_t  dirsx[600]; // shift directions in x
+	int8_t  dirsy[600]; // shift directions in y
+	uint8_t  subdirs[600]; // shift directions of best subpixels
 	float meanflowx = 0.0f;
 	float meanflowy = 0.0f;
 	uint16_t meancount = 0;
@@ -491,16 +491,16 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
 			int8_t sumy = 0;
 			int8_t ii, jj;
 
-			uint8_t *base1 = image1 + j * (uint16_t) _width + i;
+			//uint8_t *base1 = image1 + j * (uint16_t) _width + i;
 
 			for (jj = winmin; jj <= winmax; jj++)
 			{
-				uint8_t *base2 = image2 + (j+jj) * (uint16_t) _width + i;
+				//uint8_t *base2 = image2 + (j+jj) * (uint16_t) _width + i;
 
 				for (ii = winmin; ii <= winmax; ii++)
 				{
-//					uint32_t temp_dist = compute_sad_8x8(image1, image2, i, j, i + ii, j + jj, (uint16_t) global_data.param[PARAM_IMAGE_WIDTH]);
-					uint32_t temp_dist = ABSDIFF(base1, base2 + ii);
+					uint32_t temp_dist = compute_sad_8x8(image1, image2, i, j, i + ii, j + jj, (uint16_t) _width);
+//					uint32_t temp_dist = ABSDIFF(base1, base2 + ii);
 					if (temp_dist < dist)
 					{
 						sumx = ii;
@@ -685,12 +685,11 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
 			}
 			else
 			{
-
 				/* use average of accepted flow values */
 				uint32_t meancount_x = 0;
 				uint32_t meancount_y = 0;
 
-				for (uint8_t h = 0; h < meancount; h++)
+				for (uint16_t h = 0; h < meancount; h++)
 				{
 					float subdirx = 0.0f;
 					if (subdirs[h] == 0 || subdirs[h] == 1 || subdirs[h] == 7) subdirx = 0.5f;
@@ -707,12 +706,7 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
 
 				histflowx /= meancount_x;
 				histflowy /= meancount_y;
-
 			}
-
-			/* compensate rotation */
-			/* calculate focal_length in pixel */
-			const float focal_length_px = (_focal_length_mm) / (4.0f * 6.0f) * 1000.0f; //original focal lenght: 12mm pixelsize: 6um, binning 4 enabled
 
 			/*
 			 * gyro compensation
@@ -729,7 +723,7 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
 				if(fabsf(x_rate) > _gyro_compensation_threshold)
 				{
 					/* calc pixel of gyro */
-					float x_rate_pixel = x_rate * (delta_time / 1000000.0f) * focal_length_px;
+					float x_rate_pixel = x_rate * (delta_time / 1000000.0f) * _focal_length_px;
 					float comp_x = histflowx - x_rate_pixel;
 
 /* clamp value to maximum search window size plus half pixel from subpixel search */
@@ -748,7 +742,7 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
 				if(fabsf(y_rate) > _gyro_compensation_threshold)
 				{
 					/* calc pixel of gyro */
-					float y_rate_pixel = y_rate * (delta_time / 1000000.0f) * focal_length_px;
+					float y_rate_pixel = y_rate * (delta_time / 1000000.0f) * _focal_length_px;
 					float comp_y = histflowy - y_rate_pixel;
 
 					/* clamp value to maximum search window size plus/minus half pixel from subpixel search */

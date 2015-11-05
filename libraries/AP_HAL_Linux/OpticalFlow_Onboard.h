@@ -57,7 +57,6 @@ private:
     float _pixel_flow_y_integral = 0;
     uint32_t _integration_timespan = 0;
     uint8_t _surface_quality = 0;
-    uint32_t _frame_count = 0;
     AP_HAL::OpticalFlow::Gyro_Cb _get_gyro;
 };
 #endif

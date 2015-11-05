@@ -24,7 +24,7 @@ public:
              float bottom_flow_value_threshold,
              float bottom_flow_hist_filter,
              float bottom_flow_gyro_compensation,
-             float gyro_compensation_threshold, float focal_length);
+             float gyro_compensation_threshold, float focal_length_px);
     uint8_t compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_time,
                  float x_rate, float y_rate, float z_rate, float *pixel_flow_x,
                  float *pixel_flow_y);
@@ -37,7 +37,7 @@ private:
     float _bottom_flow_hist_filter;
     float _bottom_flow_gyro_compensation;
     float _gyro_compensation_threshold;
-    float _focal_length_mm;
+    float _focal_length_px;
 
 };
 #endif

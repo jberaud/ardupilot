@@ -29,8 +29,9 @@
 #include <unistd.h>
 
 
-//#define OPTICALFLOW_ONBOARD_RECORD_VIDEO 1
-//#define OPTICALFLOW_ONBOARD_VIDEO_FILE "/data/ftp/internal_000/optflow.nv12"
+#define OPTICALFLOW_ONBOARD_RECORD_VIDEO 1
+#define OPTICALFLOW_ONBOARD_VIDEO_FILE "/data/ftp/internal_000/optflow.bin"
+#define OPTICALFLOW_ONBOARD_RECORD_METADATAS 1
 #define OPTICAL_FLOW_ONBOARD_RTPRIO 13
 
 extern const AP_HAL::HAL& hal;
@@ -60,8 +61,8 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
     const char* device_path = "/dev/video0";
     memtype = V4L2_MEMORY_MMAP;
     nbufs = 8;
-    _width = 320;
-    _height = 240;
+    _width = 64;
+    _height = 64;
     _format = V4L2_PIX_FMT_NV12;
 #else
     hal.scheduler->panic("OpticalFlow_Onboard: unsupported board\n");
@@ -97,12 +98,13 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
                              " video format\n");
         return;
     }
-
+/*
+ *  don't set crop, rescale instead
     if (!_videoin->set_crop(top, left, _width, _height)) {
         hal.scheduler->panic("OpticalFlow_Onboard: couldn't set video crop\n");
         return;
     }
-
+*/
     _videoin->prepare_capture();
 
     /* Use px4 algorithm for optical flow */
@@ -113,7 +115,7 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
                          HAL_FLOW_PX4_BOTTOM_FLOW_HIST_FILTER,
                          HAL_FLOW_PX4_BOTTOM_FLOW_GYRO_COMPENSATION,
                          HAL_FLOW_PX4_GYRO_COMPENSATION_THRESHOLD,
-                         HAL_FLOW_PX4_FOCAL_LENGTH_MM);
+                         HAL_FLOW_PX4_FOCAL_LENGTH_PX);
 
     /* Create the thread that will be waiting for frames
      * Initialize thread and mutex */
@@ -183,24 +185,12 @@ void OpticalFlow_Onboard::_run_optflow()
         if (!_videoin->get_frame(video_frame)) {
             hal.scheduler->panic("OpticalFlow_Onboard: couldn't get frame\n");
         }
-#ifdef OPTICALFLOW_ONBOARD_RECORD_VIDEO
-        int fd = open("OPTICALFLOW_ONBOARD_VIDEO_FILE", O_CREAT | O_WRONLY
-                | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP |
-                S_IWGRP | S_IROTH | S_IWOTH);
-	    if (fd != -1) {
-	        write(fd, video_frame.data, video_frame.sizeimage);
-	        close(fd);
-        }
-#endif
         /* if it is at least the second frame we receive
          * since we have to compare 2 frames */
-        if (_frame_count == 0) {
+        if (_last_video_frame.data == NULL) {
             _last_video_frame = video_frame;
-            _frame_count++;
             continue;
         }
-
-        _frame_count++;
 
         /* check that width = height and that they are what we
          * expect (what has been set in the px4 flow constructor)
@@ -234,6 +224,25 @@ void OpticalFlow_Onboard::_run_optflow()
          */
         gyro_rate.rotate(OPTFLOW_ONBOARD_ROTATION);
 
+#ifdef OPTICALFLOW_ONBOARD_RECORD_VIDEO
+        int fd = open(OPTICALFLOW_ONBOARD_VIDEO_FILE, O_CREAT | O_WRONLY
+                | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP |
+                S_IWGRP | S_IROTH | S_IWOTH);
+	    if (fd != -1) {
+	        write(fd, video_frame.data, video_frame.sizeimage);
+#ifdef OPTICALFLOW_ONBOARD_RECORD_METADATAS
+        struct PACKED {
+            uint32_t timestamp;
+            float x;
+            float y;
+            float z;
+        } metas = { video_frame.timestamp, rate_x, rate_y, rate_z};
+        write(fd, &metas, sizeof(metas));
+#endif
+	        close(fd);
+        }
+#endif
+
         /* compute gyro data and video frames
          * get flow rate to send it to the opticalflow driver
          */
@@ -249,8 +258,8 @@ void OpticalFlow_Onboard::_run_optflow()
 
         /* fill data frame for upper layers */
         pthread_mutex_lock(&_mutex);
-        _pixel_flow_x_integral += flow_rate.x / HAL_FLOW_PX4_FOCAL_LENGTH_MM;
-        _pixel_flow_y_integral += flow_rate.y / HAL_FLOW_PX4_FOCAL_LENGTH_MM;
+        _pixel_flow_x_integral += flow_rate.x / HAL_FLOW_PX4_FOCAL_LENGTH_PX;
+        _pixel_flow_y_integral += flow_rate.y / HAL_FLOW_PX4_FOCAL_LENGTH_PX;
         _integration_timespan += video_frame.timestamp -
                                  _last_video_frame.timestamp;
         _surface_quality = qual;
