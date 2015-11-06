@@ -49,7 +49,7 @@ void AP_OpticalFlow_Onboard::update()
         const Vector2f flowScaler = _flowScaler();
         float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
         float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;
-        float integralToRate = 1e6f / float(data_frame.delta_time);
+        float integralToRate = 1000.0f / float(data_frame.delta_time);
         state.flowRate.x = flowScaleFactorX * integralToRate *
                            data_frame.pixel_flow_x_integral;
         state.flowRate.y = flowScaleFactorY * integralToRate *

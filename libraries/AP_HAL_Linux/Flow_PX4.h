@@ -19,25 +19,19 @@
 
 class Linux::Flow_PX4 {
 public:
-    Flow_PX4(uint32_t width, float max_flow_pixel,
+    Flow_PX4(uint32_t width,
+             uint32_t max_flow_pixel,
+             uint32_t num_blocks,
              float bottom_flow_feature_threshold,
-             float bottom_flow_value_threshold,
-             float bottom_flow_hist_filter,
-             float bottom_flow_gyro_compensation,
-             float gyro_compensation_threshold, float focal_length_px);
+             float bottom_flow_value_threshold);
     uint8_t compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_time,
-                 float x_rate, float y_rate, float z_rate, float *pixel_flow_x,
+                 float x_rate, float y_rate, float *pixel_flow_x,
                  float *pixel_flow_y);
 private:
     uint32_t _width;
-    uint32_t _frame_size;
     uint32_t _search_size;
+    uint32_t _num_blocks;
     float _bottom_flow_feature_threshold;
     float _bottom_flow_value_threshold;
-    float _bottom_flow_hist_filter;
-    float _bottom_flow_gyro_compensation;
-    float _gyro_compensation_threshold;
-    float _focal_length_px;
-
 };
 #endif

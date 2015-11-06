@@ -29,9 +29,9 @@
 #include <unistd.h>
 
 
-#define OPTICALFLOW_ONBOARD_RECORD_VIDEO 1
-#define OPTICALFLOW_ONBOARD_VIDEO_FILE "/data/ftp/internal_000/optflow.bin"
-#define OPTICALFLOW_ONBOARD_RECORD_METADATAS 1
+//#define OPTICALFLOW_ONBOARD_RECORD_VIDEO 1
+//#define OPTICALFLOW_ONBOARD_VIDEO_FILE "/data/ftp/internal_000/optflow.bin"
+//#define OPTICALFLOW_ONBOARD_RECORD_METADATAS 1
 #define OPTICAL_FLOW_ONBOARD_RTPRIO 13
 
 extern const AP_HAL::HAL& hal;
@@ -41,6 +41,7 @@ using namespace Linux;
 void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
 {
     uint32_t top, left;
+    uint32_t crop_width, crop_height;
     uint32_t memtype = V4L2_MEMORY_MMAP;
     unsigned int nbufs = 0;
     int ret;
@@ -63,6 +64,11 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
     nbufs = 8;
     _width = 64;
     _height = 64;
+    crop_width = 240;
+    crop_height = 240;
+    top = 0;
+    /* make the image square by cropping in the center */
+    left = (320 - 240) / 2;
     _format = V4L2_PIX_FMT_NV12;
 #else
     hal.scheduler->panic("OpticalFlow_Onboard: unsupported board\n");
@@ -80,42 +86,23 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
         return;
     }
 
-    /* we need a square image so set the format and crop
-     * to get a centerded square crop of the image captured by the sensor
-     */
-    if (_width > _height) {
-        top = 0;
-        left = (_width - _height) / 2;
-        _width = _height;
-    } else {
-        left = 0;
-        top = (_height - _width) / 2;
-        _height = _width;
-    }
-
     if (!_videoin->set_format(_width, _height, _format)) {
         hal.scheduler->panic("OpticalFlow_Onboard: couldn't set"
                              " video format\n");
         return;
     }
-/*
- *  don't set crop, rescale instead
-    if (!_videoin->set_crop(top, left, _width, _height)) {
+    if (!_videoin->set_crop(top, left, crop_width, crop_height)) {
         hal.scheduler->panic("OpticalFlow_Onboard: couldn't set video crop\n");
         return;
     }
-*/
     _videoin->prepare_capture();
 
     /* Use px4 algorithm for optical flow */
     _flow = new Flow_PX4(_width,
                          HAL_FLOW_PX4_MAX_FLOW_PIXEL,
+                         HAL_FLOW_PX4_NUM_BLOCKS,
                          HAL_FLOW_PX4_BOTTOM_FLOW_FEATURE_THRESHOLD,
-                         HAL_FLOW_PX4_BOTTOM_FLOW_VALUE_THRESHOLD,
-                         HAL_FLOW_PX4_BOTTOM_FLOW_HIST_FILTER,
-                         HAL_FLOW_PX4_BOTTOM_FLOW_GYRO_COMPENSATION,
-                         HAL_FLOW_PX4_GYRO_COMPENSATION_THRESHOLD,
-                         HAL_FLOW_PX4_FOCAL_LENGTH_PX);
+                         HAL_FLOW_PX4_BOTTOM_FLOW_VALUE_THRESHOLD);
 
     /* Create the thread that will be waiting for frames
      * Initialize thread and mutex */
@@ -249,8 +236,7 @@ void OpticalFlow_Onboard::_run_optflow()
         qual = _flow->compute_flow((uint8_t*)_last_video_frame.data,
                 (uint8_t *)video_frame.data,
                 video_frame.timestamp - _last_video_frame.timestamp,
-                gyro_rate.x, gyro_rate.y, gyro_rate.z,
-                &flow_rate.x, &flow_rate.y);
+                gyro_rate.x, gyro_rate.y, &flow_rate.x, &flow_rate.y);
 
         /* rotate back the 2d result to get back to the body coordinates
          * only handle yaw direction */
@@ -258,8 +244,8 @@ void OpticalFlow_Onboard::_run_optflow()
 
         /* fill data frame for upper layers */
         pthread_mutex_lock(&_mutex);
-        _pixel_flow_x_integral += flow_rate.x / HAL_FLOW_PX4_FOCAL_LENGTH_PX;
-        _pixel_flow_y_integral += flow_rate.y / HAL_FLOW_PX4_FOCAL_LENGTH_PX;
+        _pixel_flow_x_integral += flow_rate.x / HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX;
+        _pixel_flow_y_integral += flow_rate.y / HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX;
         _integration_timespan += video_frame.timestamp -
                                  _last_video_frame.timestamp;
         _surface_quality = qual;
