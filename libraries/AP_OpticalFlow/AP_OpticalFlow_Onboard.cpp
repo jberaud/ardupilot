@@ -19,7 +19,7 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX &&\
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-//#define FLOWONBOARD_DEBUG 1
+#define FLOWONBOARD_DEBUG 1
 #define OPTICALFLOW_ONBOARD_ID 1
 extern const AP_HAL::HAL& hal;
 
@@ -37,6 +37,12 @@ void AP_OpticalFlow_Onboard::init(void)
 void AP_OpticalFlow_Onboard::update()
 {
     AP_HAL::OpticalFlow::Data_Frame data_frame;
+    // read at maximum 10Hz
+    uint32_t now = hal.scheduler->millis();
+    if (now - _last_read_ms < 100) {
+        return;
+    }
+    _last_read_ms = now;
 
     if (!hal.opticalflow->read(data_frame)) {
         return;
@@ -49,13 +55,12 @@ void AP_OpticalFlow_Onboard::update()
         const Vector2f flowScaler = _flowScaler();
         float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
         float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;
-        float integralToRate = 1000.0f / float(data_frame.delta_time);
-        state.flowRate.x = flowScaleFactorX * integralToRate *
+        state.flowRate.x = flowScaleFactorX * 1000.0f / float(data_frame.delta_time) *
                            data_frame.pixel_flow_x_integral;
-        state.flowRate.y = flowScaleFactorY * integralToRate *
+        state.flowRate.y = flowScaleFactorY * 1000.0f / float(data_frame.delta_time) *
                            data_frame.pixel_flow_y_integral;
-        state.bodyRate.x = integralToRate * data_frame.pixel_flow_x_integral;
-        state.bodyRate.y = integralToRate * data_frame.pixel_flow_y_integral;
+        state.bodyRate.x = 1.0f / float(data_frame.delta_time) * data_frame.gyro_x_integral;
+        state.bodyRate.y = 1.0f / float(data_frame.delta_time) * data_frame.gyro_y_integral;
     } else {
         state.flowRate.zero();
         state.bodyRate.zero();
@@ -65,7 +70,7 @@ void AP_OpticalFlow_Onboard::update()
     _update_frontend(state);
 
 #if FLOWONBOARD_DEBUG
-    printf("FLOW_ONBOARD qual:%u FlowRateX:%4.2f Y:%4.2f BodyRateX:%4.2f y:%4.2f, delta_time = %u\n",
+    printf("FLOW_ONBOARD qual:%u FlowRateX:%4.2f Y:%4.2f BodyRateX:%4.2f Y:%4.2f, delta_time = %u\n",
             (unsigned)state.surface_quality,
             (double)state.flowRate.x,
             (double)state.flowRate.y,
@@ -73,7 +78,6 @@ void AP_OpticalFlow_Onboard::update()
             (double)state.bodyRate.y,
             data_frame.delta_time);
 #endif
-
 }
 
 void AP_OpticalFlow_Onboard::_get_gyro(float &rate_x, float &rate_y,

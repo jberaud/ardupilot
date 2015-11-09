@@ -23,6 +23,8 @@ public:
     public:
         float pixel_flow_x_integral;
         float pixel_flow_y_integral;
+        float gyro_x_integral;
+        float gyro_y_integral;
         uint32_t delta_time;
         uint8_t quality;
     };
