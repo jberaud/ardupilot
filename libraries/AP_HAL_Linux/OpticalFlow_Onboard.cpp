@@ -91,7 +91,7 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
                              " video format\n");
         return;
     }
-    if (!_videoin->set_crop(top, left, crop_width, crop_height)) {
+    if (!_videoin->set_crop(left, top, crop_width, crop_height)) {
         hal.scheduler->panic("OpticalFlow_Onboard: couldn't set video crop\n");
         return;
     }

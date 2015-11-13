@@ -52,7 +52,7 @@ public:
     bool open_device(const char *device_path, uint32_t memtype);
     bool allocate_buffers(uint32_t nbufs);
     bool set_format(uint32_t width, uint32_t height, uint32_t format);
-    bool set_crop(uint32_t top, uint32_t left,
+    bool set_crop(uint32_t left, uint32_t top,
                   uint32_t width, uint32_t height);
     void prepare_capture();
 

@@ -204,7 +204,7 @@ bool VideoIn::set_format(uint32_t width, uint32_t height, uint32_t format)
     return true;
 }
 
-bool VideoIn::set_crop(uint32_t top, uint32_t left,
+bool VideoIn::set_crop(uint32_t left, uint32_t top,
         uint32_t width, uint32_t height)
 {
     struct v4l2_crop crop;
