@@ -248,15 +248,16 @@ void OpticalFlow_Onboard::_run_optflow()
 
         /* fill data frame for upper layers */
         pthread_mutex_lock(&_mutex);
-        _pixel_flow_x_integral += flow_rate.x / HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX;
-        _pixel_flow_y_integral += flow_rate.y / HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX;
+        _pixel_flow_x_integral += flow_rate.x /
+                                  HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX;
+        _pixel_flow_y_integral += flow_rate.y /
+                                  HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX;
         _integration_timespan += video_frame.timestamp -
                                  _last_video_frame.timestamp;
-        _gyro_x_integral       += gyro_rate.x * _integration_timespan;
-        _gyro_y_integral       += gyro_rate.y * _integration_timespan;
-        printf("flowx %f, flowy %f, gyrox %f, gyroy %f, time %u\n",
-               flow_rate.x, flow_rate.y, gyro_rate.x, gyro_rate.y, 
-               video_frame.timestamp - _last_video_frame.timestamp);
+        _gyro_x_integral       += gyro_rate.x * (video_frame.timestamp -
+                                 _last_video_frame.timestamp);
+        _gyro_y_integral       += gyro_rate.y * (video_frame.timestamp -
+                                 _last_video_frame.timestamp);
         _surface_quality = qual;
         _data_available = true;
         pthread_mutex_unlock(&_mutex);
