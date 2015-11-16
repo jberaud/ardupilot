@@ -15,11 +15,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include "OpticalFlow.h"
 #include "AP_OpticalFlow_Onboard.h"
-#include <stdio.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX &&\
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-#define FLOWONBOARD_DEBUG 1
+//#define FLOWONBOARD_DEBUG 1
 #define OPTICALFLOW_ONBOARD_ID 1
 extern const AP_HAL::HAL& hal;
 
@@ -70,13 +69,14 @@ void AP_OpticalFlow_Onboard::update()
     _update_frontend(state);
 
 #if FLOWONBOARD_DEBUG
-    printf("FLOW_ONBOARD qual:%u FlowRateX:%4.2f Y:%4.2f BodyRateX:%4.2f Y:%4.2f, delta_time = %u\n",
-            (unsigned)state.surface_quality,
-            (double)state.flowRate.x,
-            (double)state.flowRate.y,
-            (double)state.bodyRate.x,
-            (double)state.bodyRate.y,
-            data_frame.delta_time);
+    hal.console->printf("FLOW_ONBOARD qual:%u FlowRateX:%4.2f Y:%4.2f"
+                        "BodyRateX:%4.2f Y:%4.2f, delta_time = %u\n",
+                        (unsigned)state.surface_quality,
+                        (double)state.flowRate.x,
+                        (double)state.flowRate.y,
+                        (double)state.bodyRate.x,
+                        (double)state.bodyRate.y,
+                        data_frame.delta_time);
 #endif
 }
 
