@@ -100,7 +100,6 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
     /* Use px4 algorithm for optical flow */
     _flow = new Flow_PX4(_width,
                          HAL_FLOW_PX4_MAX_FLOW_PIXEL,
-                         HAL_FLOW_PX4_NUM_BLOCKS,
                          HAL_FLOW_PX4_BOTTOM_FLOW_FEATURE_THRESHOLD,
                          HAL_FLOW_PX4_BOTTOM_FLOW_VALUE_THRESHOLD);
 

@@ -51,12 +51,10 @@ using namespace Linux;
 
 Flow_PX4::Flow_PX4(uint32_t width,
 				   uint32_t max_flow_pixel,
-				   uint32_t num_blocks, 
                    float bottom_flow_feature_threshold,
                    float bottom_flow_value_threshold) :
     _width(width),
     _search_size(max_flow_pixel),
-	_num_blocks(num_blocks),
     _bottom_flow_feature_threshold(bottom_flow_feature_threshold),
     _bottom_flow_value_threshold(bottom_flow_value_threshold)
 {
@@ -220,12 +218,17 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
      */
     uint16_t pixLo = _search_size + 1;
     uint16_t pixHi = _width - 1 - (_search_size + 1);
-    uint16_t pixStep = (pixHi - pixLo) / _num_blocks + 1;
+    /* 1 block is of size 2*_search_size + 1 + 1 pixel on each
+     * side for subpixel calculation.
+     * So num_blocks = _width / (2 * _search_size + 3)
+     */
+    uint16_t num_blocks = _width / (2 * _search_size + 3);
+    uint16_t pixStep = (pixHi - pixLo) / num_blocks;
     uint16_t i, j;
     uint32_t acc[2*_search_size]; // subpixels
-    int8_t  dirsx[_num_blocks*_num_blocks]; // shift directions in x
-    int8_t  dirsy[_num_blocks*_num_blocks]; // shift directions in y
-    uint8_t  subdirs[_num_blocks*_num_blocks]; // shift directions of best subpixels
+    int8_t  dirsx[num_blocks*num_blocks]; // shift directions in x
+    int8_t  dirsy[num_blocks*num_blocks]; // shift directions in y
+    uint8_t  subdirs[num_blocks*num_blocks]; // shift directions of best subpixels
     float meanflowx = 0.0f;
     float meanflowy = 0.0f;
     uint16_t meancount = 0;
@@ -293,7 +296,7 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
     }
 
     /* evaluate flow calculation */
-    if (meancount > _num_blocks*_num_blocks/2)
+    if (meancount > num_blocks*num_blocks/2)
     {
         meanflowx /= meancount;
         meanflowy /= meancount;
@@ -331,7 +334,7 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
     }
 
     /* calc quality */
-    uint8_t qual = (uint8_t)(meancount * 255 / (_num_blocks*_num_blocks));
+    uint8_t qual = (uint8_t)(meancount * 255 / (num_blocks*num_blocks));
 
     return qual;
 }

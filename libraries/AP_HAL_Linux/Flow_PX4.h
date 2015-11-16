@@ -21,7 +21,6 @@ class Linux::Flow_PX4 {
 public:
     Flow_PX4(uint32_t width,
              uint32_t max_flow_pixel,
-             uint32_t num_blocks,
              float bottom_flow_feature_threshold,
              float bottom_flow_value_threshold);
     uint8_t compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_time,
@@ -30,7 +29,6 @@ public:
 private:
     uint32_t _width;
     uint32_t _search_size;
-    uint32_t _num_blocks;
     float _bottom_flow_feature_threshold;
     float _bottom_flow_value_threshold;
 };
