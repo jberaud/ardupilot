@@ -229,6 +229,7 @@
 /* focal length 3.6 um, 2x binning in each direction
  * 240x240 crop rescaled to 64x64 */
 #define HAL_FLOW_PX4_FOCAL_LENGTH_MILLIPX (2.5 / (3.6 * 2.0 * 240 / 64))
+#define HAL_PARAM_DEFAULTS_PATH "/etc/arducopter/bebop.parm"
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
 #define HAL_BOARD_LOG_DIRECTORY "/var/APM/logs"
 #define HAL_BOARD_TERRAIN_DIRECTORY "/var/APM/terrain"
