@@ -27,7 +27,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-
+#include <linux/v4l2-mediabus.h>
 
 //#define OPTICALFLOW_ONBOARD_RECORD_VIDEO 1
 //#define OPTICALFLOW_ONBOARD_VIDEO_FILE "/data/ftp/internal_000/optflow.bin"
@@ -58,17 +58,24 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     _videoin = new VideoIn;
-    _camerasensor = new CameraSensor_Mt9v117(hal.i2c, 0x5D, MT9V117_QVGA);
-    const char* device_path = "/dev/video0";
+    _camerasensor = new CameraSensor_Mt9v117(HAL_OPTFLOW_ONBOARD_SUBDEV_PATH,
+                                             hal.i2c, 0x5D, MT9V117_QVGA);
+    if (!_camerasensor->set_format(HAL_OPTFLOW_ONBOARD_SENSOR_WIDTH,
+                                   HAL_OPTFLOW_ONBOARD_SENSOR_HEIGHT,
+                                   V4L2_MBUS_FMT_UYVY8_2X8)) {
+        hal.scheduler->panic("OpticalFlow_Onboard: couldn't set subdev fmt\n");
+    }
+    const char* device_path = HAL_OPTFLOW_ONBOARD_VDEV_PATH;
     memtype = V4L2_MEMORY_MMAP;
-    nbufs = 8;
-    _width = 64;
-    _height = 64;
-    crop_width = 240;
-    crop_height = 240;
+    nbufs = HAL_OPTFLOW_ONBOARD_NBUFS;
+    _width = HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH;
+    _height = HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT;
+    crop_width = HAL_OPTFLOW_ONBOARD_CROP_WIDTH;
+    crop_height = HAL_OPTFLOW_ONBOARD_CROP_HEIGHT;
     top = 0;
     /* make the image square by cropping in the center */
-    left = (320 - 240) / 2;
+    left = (HAL_OPTFLOW_ONBOARD_OUTPUT_WIDTH -
+            HAL_OPTFLOW_ONBOARD_OUTPUT_HEIGHT) / 2;
     _format = V4L2_PIX_FMT_NV12;
 #else
     hal.scheduler->panic("OpticalFlow_Onboard: unsupported board\n");

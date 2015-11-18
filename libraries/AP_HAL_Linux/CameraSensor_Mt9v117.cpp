@@ -105,9 +105,11 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-CameraSensor_Mt9v117::CameraSensor_Mt9v117(AP_HAL::I2CDriver *i2c,
+CameraSensor_Mt9v117::CameraSensor_Mt9v117(const char *device_path,
+                                           AP_HAL::I2CDriver *i2c,
                                            uint8_t addr,
                                            enum mt9v117_res res)    :
+    CameraSensor(device_path),
     _i2c(i2c),
     _addr(addr)
 {

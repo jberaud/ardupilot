@@ -23,8 +23,6 @@ struct buffer {
     void *mem;
 };
 
-
-
 class Linux::VideoIn {
 public:
     /* This structure implements the fields of the v4l2_pix_format struct 

@@ -24,8 +24,8 @@ enum mt9v117_res {
 
 class Linux::CameraSensor_Mt9v117 : public Linux::CameraSensor {
 public:
-    CameraSensor_Mt9v117(AP_HAL::I2CDriver *i2c, uint8_t addr,
-            enum mt9v117_res res);
+    CameraSensor_Mt9v117(const char *device_path, AP_HAL::I2CDriver *i2c,
+                         uint8_t addr, enum mt9v117_res res);
 private:
     uint8_t _read_reg8(uint16_t reg);
     void _write_reg8(uint16_t reg, uint8_t val);
