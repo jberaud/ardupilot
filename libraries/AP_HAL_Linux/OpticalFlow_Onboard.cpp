@@ -18,6 +18,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include "GPIO.h"
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "OpticalFlow_Onboard.h"
 #include "CameraSensor_Mt9v117.h"
@@ -59,7 +60,8 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     _videoin = new VideoIn;
     _camerasensor = new CameraSensor_Mt9v117(HAL_OPTFLOW_ONBOARD_SUBDEV_PATH,
-                                             hal.i2c, 0x5D, MT9V117_QVGA);
+                                             hal.i2c, 0x5D, MT9V117_QVGA,
+                                             BEBOP_GPIO_CAMV_NRST);
     if (!_camerasensor->set_format(HAL_OPTFLOW_ONBOARD_SENSOR_WIDTH,
                                    HAL_OPTFLOW_ONBOARD_SENSOR_HEIGHT,
                                    V4L2_MBUS_FMT_UYVY8_2X8)) {

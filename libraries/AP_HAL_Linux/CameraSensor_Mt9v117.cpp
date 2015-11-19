@@ -13,6 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <AP_HAL/AP_HAL.h>
+#include "GPIO.h"
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 
@@ -108,10 +109,12 @@ using namespace Linux;
 CameraSensor_Mt9v117::CameraSensor_Mt9v117(const char *device_path,
                                            AP_HAL::I2CDriver *i2c,
                                            uint8_t addr,
-                                           enum mt9v117_res res)    :
+                                           enum mt9v117_res res,
+                                           uint16_t nrst_gpio)    :
     CameraSensor(device_path),
     _i2c(i2c),
-    _addr(addr)
+    _addr(addr),
+    _nrst_gpio(nrst_gpio)
 {
     switch (res) {
     case MT9V117_QVGA:
@@ -389,7 +392,20 @@ void CameraSensor_Mt9v117::_configure_sensor_qvga()
 
 void CameraSensor_Mt9v117::_init_sensor()
 {
-    uint16_t id = _read_reg16(CHIP_ID);
+    AP_HAL::DigitalSource *gpio_source;
+    uint16_t id;
+
+    if (_nrst_gpio != 0xFFFF) {
+        gpio_source = hal.gpio->channel(_nrst_gpio);
+        gpio_source->mode(HAL_GPIO_OUTPUT);
+        gpio_source->write(1);
+        /* this delay has to be modified if the value
+         * of the EXTCLK is not 43.33
+         */
+        hal.scheduler->delay(11);
+    }
+
+    id = _read_reg16(CHIP_ID);
     if (id != MT9V117_CHIP_ID) {
         hal.scheduler->panic("Mt9v117: bad chip id\n");
     }
