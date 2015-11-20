@@ -48,7 +48,7 @@ RCOutput_Sysfs::~RCOutput_Sysfs()
 void RCOutput_Sysfs::init(void *machtnichts)
 {
     for (uint8_t i = 0; i < _channel_count; i++) {
-        _pwm_channels[i] = new PWM_Sysfs(_chip, i);
+        _pwm_channels[i] = new PWM_Sysfs_Mainline(_chip, i);
         if (!_pwm_channels[i]) {
             hal.scheduler->panic("RCOutput_Sysfs_PWM: Unable to setup PWM pin.");
         }
