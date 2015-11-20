@@ -7,7 +7,9 @@
 
 class Linux::PWM_Sysfs {
 public:
-    PWM_Sysfs(uint8_t chip, uint8_t channel);
+    PWM_Sysfs(char* export_path, char* polarity_path,
+              char* enable_path, char* duty_path,
+              char* period_path, uint8_t channel);
     ~PWM_Sysfs();
 
     enum Polarity {
@@ -39,8 +41,36 @@ public:
     PWM_Sysfs::Polarity get_polarity();
 
 private:
-    uint32_t _nsec_duty_cycle_value;
-    int _duty_cycle_fd;
-    const uint16_t _channel;
-    const uint8_t _chip;
+    uint32_t _nsec_duty_cycle_value = 0;
+    int _duty_cycle_fd = -1;
+    char* _export_path;
+    char* _polarity_path;
+    char* _enable_path;
+    char* _duty_path;
+    char* _period_path;
+};
+
+class Linux::PWM_Sysfs_Mainline : public Linux::PWM_Sysfs {
+public:
+    PWM_Sysfs_Mainline(uint8_t chip, uint8_t channel);
+
+private:
+    char* _generate_export_path(uint8_t chip);
+    char* _generate_polarity_path(uint8_t chip, uint8_t channel);
+    char* _generate_enable_path(uint8_t chip, uint8_t channel);
+    char* _generate_duty_path(uint8_t chip, uint8_t channel);
+    char* _generate_period_path(uint8_t chip, uint8_t channel);
+};
+
+class Linux::PWM_Sysfs_Bebop : public Linux::PWM_Sysfs {
+public:
+    PWM_Sysfs_Bebop(uint8_t channel);
+
+private:
+    char* _generate_export_path();
+    char* _generate_polarity_path(uint8_t channel);
+    char* _generate_enable_path(uint8_t channel);
+    char* _generate_duty_path(uint8_t channel);
+    char* _generate_period_path(uint8_t channel);
+
 };
