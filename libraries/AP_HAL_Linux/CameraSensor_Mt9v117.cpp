@@ -110,11 +110,13 @@ CameraSensor_Mt9v117::CameraSensor_Mt9v117(const char *device_path,
                                            AP_HAL::I2CDriver *i2c,
                                            uint8_t addr,
                                            enum mt9v117_res res,
-                                           uint16_t nrst_gpio)    :
+                                           uint16_t nrst_gpio,
+                                           uint32_t clock_freq)    :
     CameraSensor(device_path),
     _i2c(i2c),
     _addr(addr),
-    _nrst_gpio(nrst_gpio)
+    _nrst_gpio(nrst_gpio),
+    _clock_freq(clock_freq)
 {
     switch (res) {
     case MT9V117_QVGA:
@@ -399,10 +401,10 @@ void CameraSensor_Mt9v117::_init_sensor()
         gpio_source = hal.gpio->channel(_nrst_gpio);
         gpio_source->mode(HAL_GPIO_OUTPUT);
         gpio_source->write(1);
-        /* this delay has to be modified if the value
-         * of the EXTCLK is not 43.33
-         */
-        hal.scheduler->delay(11);
+        uint32_t delay = 3.5f + (35.0f - 3.5f) *
+                        (54000000.0f - (float)_clock_freq) /
+                        (54000000.0f - 6000000.0f);
+        hal.scheduler->delay(delay);
     }
 
     id = _read_reg16(CHIP_ID);

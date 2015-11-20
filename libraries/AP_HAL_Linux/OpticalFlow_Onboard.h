@@ -44,6 +44,7 @@ private:
     void _rotate_back_2d(Vector2f rate, enum Rotation rotation);
     VideoIn* _videoin;
     VideoIn::Frame _last_video_frame;
+    PWM_Sysfs* _pwm;
     CameraSensor* _camerasensor;
     Flow_PX4* _flow;
     pthread_t _thread;

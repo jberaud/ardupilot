@@ -22,6 +22,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include "OpticalFlow_Onboard.h"
 #include "CameraSensor_Mt9v117.h"
+#include "PWM_Sysfs.h"
 #include <stdio.h>
 #include <pthread.h>
 #include <sys/types.h>
@@ -59,9 +60,14 @@ void OpticalFlow_Onboard::init(AP_HAL::OpticalFlow::Gyro_Cb get_gyro)
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
     _videoin = new VideoIn;
+    _pwm = new PWM_Sysfs_Bebop(BEBOP_CAMV_PWM);
+    _pwm->set_freq(BEBOP_CAMV_PWM_FREQ);
+    _pwm->enable(true);
+
     _camerasensor = new CameraSensor_Mt9v117(HAL_OPTFLOW_ONBOARD_SUBDEV_PATH,
                                              hal.i2c, 0x5D, MT9V117_QVGA,
-                                             BEBOP_GPIO_CAMV_NRST);
+                                             BEBOP_GPIO_CAMV_NRST,
+                                             BEBOP_CAMV_PWM_FREQ);
     if (!_camerasensor->set_format(HAL_OPTFLOW_ONBOARD_SENSOR_WIDTH,
                                    HAL_OPTFLOW_ONBOARD_SENSOR_HEIGHT,
                                    V4L2_MBUS_FMT_UYVY8_2X8)) {
@@ -230,13 +236,13 @@ void OpticalFlow_Onboard::_run_optflow()
 	    if (fd != -1) {
 	        write(fd, video_frame.data, video_frame.sizeimage);
 #ifdef OPTICALFLOW_ONBOARD_RECORD_METADATAS
-        struct PACKED {
-            uint32_t timestamp;
-            float x;
-            float y;
-            float z;
-        } metas = { video_frame.timestamp, rate_x, rate_y, rate_z};
-        write(fd, &metas, sizeof(metas));
+            struct PACKED {
+                uint32_t timestamp;
+                float x;
+                float y;
+                float z;
+            } metas = { video_frame.timestamp, rate_x, rate_y, rate_z};
+            write(fd, &metas, sizeof(metas));
 #endif
 	        close(fd);
         }
