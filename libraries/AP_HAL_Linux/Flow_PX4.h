@@ -31,5 +31,9 @@ private:
     uint32_t _search_size;
     float _bottom_flow_feature_threshold;
     float _bottom_flow_value_threshold;
+    uint16_t _pixlo;
+    uint16_t _pixhi;
+    uint16_t _pixstep;
+    uint8_t  _num_blocks;
 };
 #endif

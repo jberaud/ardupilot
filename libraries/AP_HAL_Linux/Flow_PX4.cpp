@@ -58,6 +58,21 @@ Flow_PX4::Flow_PX4(uint32_t width,
     _bottom_flow_feature_threshold(bottom_flow_feature_threshold),
     _bottom_flow_value_threshold(bottom_flow_value_threshold)
 {
+    /* _pixlo is _search_size + 1 because if we need to evaluate
+     * the subpixels up/left of the first pixel, the index
+     * will be equal to _pixlo - _search_size -1
+     * idem if we need to evaluate the subpixels down/right
+     * the index will be equal to _pixhi + _search_size + 1
+     * which needs to remain inferior to _width - 1
+     */
+    _pixlo = _search_size + 1;
+    _pixhi = _width - 1 - (_search_size + 1);
+    /* 1 block is of size 2*_search_size + 1 + 1 pixel on each
+     * side for subpixel calculation.
+     * So _num_blocks = _width / (2 * _search_size + 3)
+     */
+    _num_blocks = _width / (2 * _search_size + 3);
+    _pixstep = ceil(((float)(_pixhi - _pixlo)) / _num_blocks);
 }
 
 /**
@@ -204,31 +219,14 @@ static inline uint32_t compute_subpixel(uint8_t *image1, uint8_t *image2, uint16
 uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_time,
         float x_rate, float y_rate, float *pixel_flow_x, float *pixel_flow_y)
 {
-        /* constants */
+    /* constants */
     const int16_t winmin = -_search_size;
     const int16_t winmax = _search_size;
-
-    /* variables */
-    /* pixLo is _search_size + 1 because if we need to evaluate
-     * the subpixels up/left of the first pixel, the index
-     * will be equal to pixLo - _search_size -1
-     * idem if we need to evaluate the subpixels down/right
-     * the index will be equal to pixHi + _search_size + 1
-     * which needs to remain inferior to _width - 1
-     */
-    uint16_t pixLo = _search_size + 1;
-    uint16_t pixHi = _width - 1 - (_search_size + 1);
-    /* 1 block is of size 2*_search_size + 1 + 1 pixel on each
-     * side for subpixel calculation.
-     * So num_blocks = _width / (2 * _search_size + 3)
-     */
-    uint16_t num_blocks = _width / (2 * _search_size + 3);
-    uint16_t pixStep = ceil(((float)(pixHi - pixLo)) / ((float)num_blocks));
     uint16_t i, j;
     uint32_t acc[2*_search_size]; // subpixels
-    int8_t  dirsx[num_blocks*num_blocks]; // shift directions in x
-    int8_t  dirsy[num_blocks*num_blocks]; // shift directions in y
-    uint8_t  subdirs[num_blocks*num_blocks]; // shift directions of best subpixels
+    int8_t  dirsx[_num_blocks*_num_blocks]; // shift directions in x
+    int8_t  dirsy[_num_blocks*_num_blocks]; // shift directions in y
+    uint8_t  subdirs[_num_blocks*_num_blocks]; // shift directions of best subpixels
     float meanflowx = 0.0f;
     float meanflowy = 0.0f;
     uint16_t meancount = 0;
@@ -237,9 +235,9 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
 
     /* iterate over all patterns
      */
-    for (j = pixLo; j < pixHi; j += pixStep)
+    for (j = _pixlo; j < _pixhi; j += _pixstep)
     {
-        for (i = pixLo; i < pixHi; i += pixStep)
+        for (i = _pixlo; i < _pixhi; i += _pixstep)
         {
             /* test pixel if it is suitable for flow tracking */
             uint32_t diff = compute_diff(image1, i, j, (uint16_t) _width, _search_size);
@@ -296,7 +294,7 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
     }
 
     /* evaluate flow calculation */
-    if (meancount > num_blocks*num_blocks/2)
+    if (meancount > _num_blocks*_num_blocks/2)
     {
         meanflowx /= meancount;
         meanflowy /= meancount;
@@ -334,7 +332,7 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
     }
 
     /* calc quality */
-    uint8_t qual = (uint8_t)(meancount * 255 / (num_blocks*num_blocks));
+    uint8_t qual = (uint8_t)(meancount * 255 / (_num_blocks*_num_blocks));
 
     return qual;
 }
