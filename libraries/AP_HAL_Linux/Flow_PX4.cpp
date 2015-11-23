@@ -50,9 +50,9 @@ extern const AP_HAL::HAL& hal;
 using namespace Linux;
 
 Flow_PX4::Flow_PX4(uint32_t width,
-				   uint32_t max_flow_pixel,
-                   float bottom_flow_feature_threshold,
-                   float bottom_flow_value_threshold) :
+                   uint32_t max_flow_pixel,
+                   float    bottom_flow_feature_threshold,
+                   float    bottom_flow_value_threshold) :
     _width(width),
     _search_size(max_flow_pixel),
     _bottom_flow_feature_threshold(bottom_flow_feature_threshold),
@@ -76,19 +76,19 @@ Flow_PX4::Flow_PX4(uint32_t width,
 }
 
 /**
- * @brief Compute the average pixel gradient of all horizontal and vertical steps
- *
- * TODO compute_diff is not appropriate for low-light mode images
+ * @brief Compute the average pixel gradient of all horizontal and vertical
+ *        steps
  *
  * @param image ...
  * @param offX x coordinate of upper left corner of 8x8 pattern in image
  * @param offY y coordinate of upper left corner of 8x8 pattern in image
  */
-uint32_t compute_diff(uint8_t *image, uint16_t offX, uint16_t offY,
+uint32_t compute_diff(uint8_t *image, uint16_t offx, uint16_t offy,
                       uint16_t row_size, uint8_t window_size)
 {
     /* calculate position in image buffer */
-    uint16_t off = (offY + 2) * row_size + (offX + 2); // we calc only the 4x4 pattern
+    /* we calc only the 4x4 pattern */
+    uint16_t off = (offy + 2) * row_size + (offx + 2);
     uint32_t acc = 0;
     unsigned int i;
 
@@ -98,14 +98,17 @@ uint32_t compute_diff(uint8_t *image, uint16_t offX, uint16_t offY,
          */
         acc += abs(image[off + i] - image[off + i + row_size]);
         acc += abs(image[off + i + row_size] - image[off + i + 2 * row_size]);
-        acc += abs(image[off + i + 2 * row_size] - image[off + i + 3 * row_size]);
-        
+        acc += abs(image[off + i + 2 * row_size] -
+                   image[off + i + 3 * row_size]);
+
         /* accumulate differences between col1/2, 2/3, 3/4 for 4 pixels starting
          * at off
          */
         acc += abs(image[off + row_size * i] - image[off + row_size * i + 1]);
-        acc += abs(image[off + row_size * i + 1] - image[off + row_size * i + 2]);
-        acc += abs(image[off + row_size * i + 2] - image[off + row_size * i + 3]);
+        acc += abs(image[off + row_size * i + 1] -
+                   image[off + row_size * i + 2]);
+        acc += abs(image[off + row_size * i + 2] -
+                   image[off + row_size * i + 3]);
     }
 
     return acc;
@@ -121,17 +124,23 @@ uint32_t compute_diff(uint8_t *image, uint16_t offX, uint16_t offY,
  * @param off2X x coordinate of upper left corner of pattern in image2
  * @param off2Y y coordinate of upper left corner of pattern in image2
  */
-static inline uint32_t compute_sad(uint8_t *image1, uint8_t *image2, uint16_t off1X, uint16_t off1Y, uint16_t off2X, uint16_t off2Y, uint16_t row_size, uint16_t window_size)
+static inline uint32_t compute_sad(uint8_t *image1, uint8_t *image2,
+                                   uint16_t off1x, uint16_t off1y,
+                                   uint16_t off2x, uint16_t off2y,
+                                   uint16_t row_size, uint16_t window_size)
 {
-    /* calculate position in image buffer */
-    uint16_t off1 = off1Y * row_size + off1X; // image1
-    uint16_t off2 = off2Y * row_size + off2X; // image2
+    /* calculate position in image buffer
+     * off1 for image1 and off2 for image2
+     */
+    uint16_t off1 = off1y * row_size + off1x;
+    uint16_t off2 = off2y * row_size + off2x;
     unsigned int i,j;
     uint32_t acc = 0;
-    
+
     for (i = 0; i < window_size; i++)
         for (j = 0; j < window_size; j++)
-            acc += abs(image1[off1 + i + j*row_size] - image2[off2 + i + j*row_size]);
+            acc += abs(image1[off1 + i + j*row_size] -
+                       image2[off2 + i + j*row_size]);
 
     return acc;
 }
@@ -147,11 +156,15 @@ static inline uint32_t compute_sad(uint8_t *image1, uint8_t *image2, uint16_t of
  * @param off2Y y coordinate of upper left corner of pattern in image2
  * @param acc array to store SAD distances for shift in every direction
  */
-static inline uint32_t compute_subpixel(uint8_t *image1, uint8_t *image2, uint16_t off1X, uint16_t off1Y, uint16_t off2X, uint16_t off2Y, uint32_t *acc, uint16_t row_size, uint16_t window_size)
+static inline uint32_t compute_subpixel(uint8_t *image1, uint8_t *image2,
+                                        uint16_t off1x, uint16_t off1y,
+                                        uint16_t off2x, uint16_t off2y,
+                                        uint32_t *acc, uint16_t row_size,
+                                        uint16_t window_size)
 {
     /* calculate position in image buffer */
-    uint16_t off1 = off1Y * row_size + off1X; // image1
-    uint16_t off2 = off2Y * row_size + off2X; // image2
+    uint16_t off1 = off1y * row_size + off1x; // image1
+    uint16_t off2 = off2y * row_size + off2x; // image2
     uint8_t sub[8];
     uint16_t i, j, k;
 
@@ -168,7 +181,7 @@ static inline uint32_t compute_subpixel(uint8_t *image1, uint8_t *image2, uint16
              *  + - + 2 + - +
              *  +   3   1   +
              *  + - + - + - +
-            */
+             */
 
             /* subpixel 0 is the mean value of base pixel and
              * the pixel on the right, subpixel 1 is the mean
@@ -207,7 +220,7 @@ static inline uint32_t compute_subpixel(uint8_t *image1, uint8_t *image2, uint16
                       image2[off2 + i + 1 + j*row_size] +
                       image2[off2 + i + (j-1)*row_size] +
                       image2[off2 + i + 1 + (j-1)*row_size])/4;
-            
+
             for (k = 0; k < 8; k++)
                 acc[k] += abs(image1[off1 + i + j*row_size] - sub[k]);
         }
@@ -216,17 +229,19 @@ static inline uint32_t compute_subpixel(uint8_t *image1, uint8_t *image2, uint16
     return 0;
 }
 
-uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_time,
-        float x_rate, float y_rate, float *pixel_flow_x, float *pixel_flow_y)
+uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2,
+                               uint32_t delta_time, float x_rate,
+                               float y_rate, float *pixel_flow_x,
+                               float *pixel_flow_y)
 {
     /* constants */
     const int16_t winmin = -_search_size;
     const int16_t winmax = _search_size;
     uint16_t i, j;
-    uint32_t acc[2*_search_size]; // subpixels
-    int8_t  dirsx[_num_blocks*_num_blocks]; // shift directions in x
-    int8_t  dirsy[_num_blocks*_num_blocks]; // shift directions in y
-    uint8_t  subdirs[_num_blocks*_num_blocks]; // shift directions of best subpixels
+    uint32_t acc[2*_search_size];
+    int8_t dirsx[_num_blocks*_num_blocks];
+    int8_t dirsy[_num_blocks*_num_blocks];
+    uint8_t subdirs[_num_blocks*_num_blocks];
     float meanflowx = 0.0f;
     float meanflowy = 0.0f;
     uint16_t meancount = 0;
@@ -240,7 +255,8 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
         for (i = _pixlo; i < _pixhi; i += _pixstep)
         {
             /* test pixel if it is suitable for flow tracking */
-            uint32_t diff = compute_diff(image1, i, j, (uint16_t) _width, _search_size);
+            uint32_t diff = compute_diff(image1, i, j, (uint16_t) _width,
+                                         _search_size);
             if (diff < _bottom_flow_feature_threshold)
             {
                 continue;
@@ -255,8 +271,10 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
             {
                 for (ii = winmin; ii <= winmax; ii++)
                 {
-                    uint32_t temp_dist = compute_sad(image1, image2, i, j, i + ii, j + jj,
-                            (uint16_t) _width, 2 * _search_size);
+                    uint32_t temp_dist = compute_sad(image1, image2, i, j,
+                                                     i + ii, j + jj,
+                                                     (uint16_t) _width,
+                                                     2 * _search_size);
                     if (temp_dist < dist)
                     {
                         sumx = ii;
@@ -272,8 +290,9 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
                 meanflowx += (float) sumx;
                 meanflowy += (float) sumy;
 
-                compute_subpixel(image1, image2, i, j, i + sumx, j + sumy, acc, (uint16_t) _width,
-                        2 * _search_size);
+                compute_subpixel(image1, image2, i, j, i + sumx, j + sumy,
+                                 acc, (uint16_t) _width,
+                                 2 * _search_size);
                 uint32_t mindist = dist; // best SAD until now
                 uint8_t mindir = 8; // direction 8 for no direction
                 for(uint8_t k = 0; k < 2 * _search_size; k++)
@@ -306,14 +325,22 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
         for (uint16_t h = 0; h < meancount; h++)
         {
             float subdirx = 0.0f;
-            if (subdirs[h] == 0 || subdirs[h] == 1 || subdirs[h] == 7) subdirx = 0.5f;
-            if (subdirs[h] == 3 || subdirs[h] == 4 || subdirs[h] == 5) subdirx = -0.5f;
+            if (subdirs[h] == 0 || subdirs[h] == 1 || subdirs[h] == 7) {
+                subdirx = 0.5f;
+            }
+            if (subdirs[h] == 3 || subdirs[h] == 4 || subdirs[h] == 5) {
+                subdirx = -0.5f;
+            }
             histflowx += (float)dirsx[h] + subdirx;
             meancount_x++;
 
             float subdiry = 0.0f;
-            if (subdirs[h] == 5 || subdirs[h] == 6 || subdirs[h] == 7) subdiry = -0.5f;
-            if (subdirs[h] == 1 || subdirs[h] == 2 || subdirs[h] == 3) subdiry = 0.5f;
+            if (subdirs[h] == 5 || subdirs[h] == 6 || subdirs[h] == 7) {
+                subdiry = -0.5f;
+            }
+            if (subdirs[h] == 1 || subdirs[h] == 2 || subdirs[h] == 3) {
+                subdiry = 0.5f;
+            }
             histflowy += (float)dirsy[h] + subdiry;
             meancount_y++;
         }
