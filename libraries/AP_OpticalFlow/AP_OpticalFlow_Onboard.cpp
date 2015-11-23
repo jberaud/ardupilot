@@ -22,7 +22,8 @@
 #define OPTICALFLOW_ONBOARD_ID 1
 extern const AP_HAL::HAL& hal;
 
-AP_OpticalFlow_Onboard::AP_OpticalFlow_Onboard(OpticalFlow &_frontend, AP_AHRS_NavEKF& ahrs) : 
+AP_OpticalFlow_Onboard::AP_OpticalFlow_Onboard(OpticalFlow &_frontend,
+                                               AP_AHRS_NavEKF& ahrs) :
     OpticalFlow_backend(_frontend),
     _ahrs(ahrs)
 {}
@@ -30,7 +31,9 @@ AP_OpticalFlow_Onboard::AP_OpticalFlow_Onboard(OpticalFlow &_frontend, AP_AHRS_N
 void AP_OpticalFlow_Onboard::init(void)
 {
     /* register callback to get gyro data */
-    hal.opticalflow->init(FUNCTOR_BIND_MEMBER(&AP_OpticalFlow_Onboard::_get_gyro, void, float&, float&, float&));
+    hal.opticalflow->init(
+            FUNCTOR_BIND_MEMBER(&AP_OpticalFlow_Onboard::_get_gyro,
+                                void, float&, float&, float&));
 }
 
 void AP_OpticalFlow_Onboard::update()
@@ -54,12 +57,20 @@ void AP_OpticalFlow_Onboard::update()
         const Vector2f flowScaler = _flowScaler();
         float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
         float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;
-        state.flowRate.x = flowScaleFactorX * 1000.0f / float(data_frame.delta_time) *
+
+        state.flowRate.x = flowScaleFactorX * 1000.0f /
+                           float(data_frame.delta_time) *
                            data_frame.pixel_flow_x_integral;
-        state.flowRate.y = flowScaleFactorY * 1000.0f / float(data_frame.delta_time) *
+
+        state.flowRate.y = flowScaleFactorY * 1000.0f /
+                           float(data_frame.delta_time) *
                            data_frame.pixel_flow_y_integral;
-        state.bodyRate.x = 1.0f / float(data_frame.delta_time) * data_frame.gyro_x_integral;
-        state.bodyRate.y = 1.0f / float(data_frame.delta_time) * data_frame.gyro_y_integral;
+
+        state.bodyRate.x = 1.0f / float(data_frame.delta_time) *
+                           data_frame.gyro_x_integral;
+
+        state.bodyRate.y = 1.0f / float(data_frame.delta_time) *
+                           data_frame.gyro_y_integral;
     } else {
         state.flowRate.zero();
         state.bodyRate.zero();
