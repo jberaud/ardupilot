@@ -223,7 +223,7 @@ uint8_t Flow_PX4::compute_flow(uint8_t *image1, uint8_t *image2, uint32_t delta_
      * So num_blocks = _width / (2 * _search_size + 3)
      */
     uint16_t num_blocks = _width / (2 * _search_size + 3);
-    uint16_t pixStep = (pixHi - pixLo) / num_blocks;
+    uint16_t pixStep = ceil(((float)(pixHi - pixLo)) / ((float)num_blocks));
     uint16_t i, j;
     uint32_t acc[2*_search_size]; // subpixels
     int8_t  dirsx[num_blocks*num_blocks]; // shift directions in x
