@@ -93,6 +93,8 @@ static GPIO_BBB gpioDriver;
 static GPIO_RPI gpioDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 static GPIO_Sysfs gpioDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+static GPIO_Sysfs gpioDriver;
 #else
 static Empty::GPIO gpioDriver;
 #endif

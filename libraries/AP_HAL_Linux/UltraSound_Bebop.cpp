@@ -17,11 +17,8 @@
 #include <time.h>
 #include "UltraSound_Bebop.h"
 #include "IIO.h"
+#include "GPIO.h"
 
-/*
- * GPIO used to configure ultrasound level
- */
-#define P7_US_PULSE_LEVEL_GPIO "/sys/class/gpio/gpio200/value"
 /*
  * this mode is used at low altitude
  * send 4 wave patterns
@@ -58,26 +55,17 @@ int UltraSound_Bebop::launch_purge()
 
 void UltraSound_Bebop::configure_gpio(int value)
 {
-    int ret = 0;
-    int fd;
-    fd = open(P7_US_PULSE_LEVEL_GPIO, O_RDWR);
-    if (fd == -1) {
-        ULOGE("could not configure gpio");
-        return;
-    }
     switch (value) {
     case 1: // high voltage
-        ret = write(fd, "1", 2);
+        _gpio->write(LINUX_GPIO_ULTRASOUND_VOLTAGE, 1);
         break;
     case 0: // low voltage
-        ret = write(fd, "0", 2);
+        _gpio->write(LINUX_GPIO_ULTRASOUND_VOLTAGE, 0);
         break;
     default:
         ULOGE("bad gpio value (%d)", value);
         break;
     }
-    if (ret != 2)
-        ULOGE("error gpio");
 }
 
 /*
@@ -177,6 +165,7 @@ UltraSound_Bebop::UltraSound_Bebop()
     _hysteresis_counter = 0;
     /* SPI and IIO can not be initialized just yet */
     _spi = nullptr;
+    _gpio = nullptr;
     _iio = nullptr;
     memset(_tx[0], 0xF0, 16);
     memset(_tx[1], 0xF0, 4);
@@ -193,6 +182,13 @@ void UltraSound_Bebop::init()
         return; /* never reached */
     }
     _spi->init();
+
+    _gpio = AP_HAL::get_HAL().gpio;
+    if (_gpio == NULL) {
+        hal.scheduler->panic("Could not find GPIO device for Bebop ultrasound");
+
+        return; /* never reached */
+    }
 
     if (configure_capture() < 0)
         goto error_free_us;

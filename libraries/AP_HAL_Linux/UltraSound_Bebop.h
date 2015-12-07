@@ -78,6 +78,7 @@ private:
     struct adcCapture_t _adc;
     AP_HAL::SPIDeviceDriver *_spi;
     struct iio_context *_iio;
+    AP_HAL::GPIO *_gpio;
     int _mode;
     unsigned char _tx[2][P7_US_NB_PULSES_MAX];
     unsigned char _purge[P7_US_NB_PULSES_PURGE];
