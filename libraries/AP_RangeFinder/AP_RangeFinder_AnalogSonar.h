@@ -19,9 +19,8 @@
 
 #include "RangeFinder.h"
 #include "RangeFinder_Backend.h"
-#include <AP_HAL_Linux/AP_HAL_Linux.h>
-#include <AP_HAL_Linux/Semaphores.h>
 #include <pthread.h>
+#include <AP_HAL/AP_HAL.h>
 
 #define RANGEFINDER_LOG
 
@@ -82,7 +81,7 @@ private:
 #ifdef RANGEFINDER_LOG
     RangeFinder_Log _log;
 #endif
-    UltraSound_Bebop *_ultrasound;
+    AP_HAL::UltraSound *_ultrasound;
     struct adcCapture_t *_adcCapture;
     uint64_t _last_timestamp;
 
@@ -90,8 +89,7 @@ private:
     int _echoesNb;
     int _freq;
     float _altitude;
-    Linux::Semaphore _semCapture;
-    Linux::Semaphore _semMeasure;
+    pthread_mutex_t _mutex;
     pthread_t _thread;
 
     unsigned int *_filteredCapture;

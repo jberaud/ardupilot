@@ -27,9 +27,8 @@
 
 #include <stdio.h>
 #include <errno.h>
-#include "AP_HAL_Linux/UltraSound_Bebop.h"
 
-#include "AP_HAL_Linux/IIO.h"
+#include "AP_HAL/IIO.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -64,7 +63,7 @@ AP_RangeFinder_AnalogSonar::AP_RangeFinder_AnalogSonar(RangeFinder &_ranger,
 #ifdef RANGEFINDER_LOG
     _log(*this),
 #endif
-    _ultrasound(AP_HAL_Linux.ultraSound),
+    _ultrasound(hal.ultrasound),
     _adcCapture(NULL),
     _mode(0),
     _echoesNb(0),
@@ -73,6 +72,7 @@ AP_RangeFinder_AnalogSonar::AP_RangeFinder_AnalogSonar(RangeFinder &_ranger,
     _filterAverage(4)
 {
     LOGI("AP_RangeFinder_AnalogSonar::AP_RangeFinder_AnalogSonar");
+    pthread_mutex_init(&_mutex, NULL);
     _freq = P7_US_DEFAULT_FREQ;
     _filteredCaptureSize = _ultrasound->get_buffer_size() / _filterAverage;
     _filteredCapture = (unsigned int*) calloc(1, sizeof(_filteredCapture[0]) * _filteredCaptureSize);
@@ -254,7 +254,7 @@ void AP_RangeFinder_AnalogSonar::loop(void)
     while(1) {
         /* Wait for the semaphore that will be given when the "update" function
          * is over */
-        _semCapture.take(0);
+        pthread_mutex_lock(&_mutex);
         _ultrasound->launch();
 
         _ultrasound->capture();
@@ -327,7 +327,7 @@ void AP_RangeFinder_AnalogSonar::update(void)
     state.distance_cm = (uint16_t) (_altitude * 100);
     update_status();
     /* Let the secondary thread launch the ultrasound capture */
-    _semCapture.give();
+    pthread_mutex_unlock(&_mutex);
 }
 
 #ifdef RANGEFINDER_LOG

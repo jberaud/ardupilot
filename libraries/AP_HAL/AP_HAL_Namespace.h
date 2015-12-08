@@ -27,6 +27,7 @@ namespace AP_HAL {
     class Scheduler;
     class Semaphore;
     class OpticalFlow;
+    class UltraSound;
     
     class Util;
 

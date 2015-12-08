@@ -9,14 +9,12 @@
 #include <sys/mman.h>
 #include <linux/types.h>
 #include <errno.h>
-#include <linux/spi/spidev.h>
-#include <AP_HAL_Linux/IIO.h>
+#include <AP_HAL/IIO.h>
 #include <sys/ioctl.h>
 #include <float.h>
 #include <math.h>
 #include <time.h>
 #include "UltraSound_Bebop.h"
-#include "IIO.h"
 #include "GPIO.h"
 
 /*
@@ -177,7 +175,7 @@ void UltraSound_Bebop::init()
 {
     _spi = hal.spi->device(AP_HAL::SPIDevice_BebopUltraSound);
     if (_spi == NULL) {
-        hal.scheduler->panic("Could not find SPI device for Bebop ultrasound");
+        AP_HAL::panic("Could not find SPI device for Bebop ultrasound");
 
         return; /* never reached */
     }
@@ -185,7 +183,7 @@ void UltraSound_Bebop::init()
 
     _gpio = AP_HAL::get_HAL().gpio;
     if (_gpio == NULL) {
-        hal.scheduler->panic("Could not find GPIO device for Bebop ultrasound");
+        AP_HAL::panic("Could not find GPIO device for Bebop ultrasound");
 
         return; /* never reached */
     }

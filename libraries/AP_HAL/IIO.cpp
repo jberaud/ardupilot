@@ -1,4 +1,4 @@
-#include "IIO.h"
+#include <AP_HAL/IIO.h>
 
 //#include "iio-private.h"
 
@@ -260,7 +260,7 @@ static char * get_short_attr_name(struct iio_channel *chn, const char *attr)
         ptr += len + 1;
 
     if (chn->name) {
-        size_t len = strlen(chn->name);
+        len = strlen(chn->name);
         if  (strncmp(chn->name, ptr, len) == 0 && ptr[len] == '_')
             ptr += len + 1;
     }
@@ -1640,7 +1640,7 @@ static ssize_t read_all(void *dst, size_t len, int fd)
 {
     uintptr_t ptr = (uintptr_t) dst;
     ssize_t readsize;
-    int ret;
+    int ret = 0;
 
     while (len > 0) {
         do {
@@ -1669,13 +1669,12 @@ static ssize_t read_all(void *dst, size_t len, int fd)
 static ssize_t local_read(const struct iio_device *dev,
         void *dst, size_t len, uint32_t *mask, size_t words)
 {
-    ssize_t ret;
+    ssize_t ret = 0;
     struct iio_device_pdata *pdata = dev->pdata;
     if (pdata->fd == -1)
         return -EBADF;
     if (words != dev->words)
         return -EINVAL;
-
     ret = local_enable_buffer(dev);
     if (ret < 0)
         return ret;
@@ -1686,7 +1685,6 @@ static ssize_t local_read(const struct iio_device *dev,
 
     memcpy(mask, dev->mask, words);
     ret = read_all(dst, len, pdata->fd);
-
     return ret ? ret : -EIO;
 }
 

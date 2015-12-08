@@ -2,9 +2,6 @@
 #ifndef __AP_HAL_LINUX_ULTRASOUND_BEBOP_H__
 #define __AP_HAL_LINUX_ULTRASOUND_BEBOP_H__
 
-#include <stdint.h>
-#include <linux/spi/spidev.h>
-
 /*
  * the size of the buffer sent over spi
  */
@@ -45,23 +42,7 @@
 /* count this times before switching mode */
 #define P7_US_TRANSITION_COUNT 5
 
-
-/*
- * struct related to adc
- * data to receive and process adc datas
- */
-struct adcCapture_t {
-    struct iio_device *device;
-    struct iio_buffer *buffer;
-    unsigned int buffer_size;
-    struct iio_channel *channel;
-    unsigned int freq;
-
-     /* Used in order to match two echoes of two ADC acquisitions */
-    unsigned short threshold_time_rejection;
-};
-
-class UltraSound_Bebop {
+class UltraSound_Bebop : public AP_HAL::UltraSound {
 public:
     UltraSound_Bebop();
     ~UltraSound_Bebop();
@@ -70,7 +51,6 @@ public:
     int launch(void);
     int capture(void);
     int update_mode(float altitude);
-    void wave_test(unsigned int);
     unsigned int get_buffer_size() { return _adc.buffer_size; };
     struct adcCapture_t* get_capture() { return &_adc; };
 

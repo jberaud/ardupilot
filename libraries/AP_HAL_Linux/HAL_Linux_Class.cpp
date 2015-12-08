@@ -151,7 +151,7 @@ static Empty::RCOutput rcoutDriver;
 static UltraSound_Bebop ultraSoundInstance;
 #endif
 
-static LinuxScheduler schedulerInstance;
+static Scheduler schedulerInstance;
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 static OpticalFlow_Onboard opticalFlow;
@@ -188,8 +188,8 @@ HAL_Linux::HAL_Linux() :
         &rcoutDriver,
         &schedulerInstance,
         &utilInstance,
-        &opticalFlow),
-    ultraSound(&ultraSoundInstance)
+        &opticalFlow,
+        &ultraSoundInstance)
 {}
 
 void _usage(void)
@@ -279,7 +279,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     uartE->begin(115200);    
     analogin->init();
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-    ultraSound->init();
+    ultrasound->init();
 #endif
     utilInstance.init(argc+gopt.optind-1, &argv[gopt.optind-1]);
 
