@@ -39,7 +39,6 @@ pxf: all
 bebop: HAL_BOARD = HAL_BOARD_LINUX
 bebop: TOOLCHAIN = BBONE
 bebop: LDFLAGS += "-static"
-bebop: OPTFLAGS = -O0 -g3
 bebop: all
 
 minlure: HAL_BOARD = HAL_BOARD_LINUX
