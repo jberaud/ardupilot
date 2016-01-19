@@ -181,6 +181,12 @@ void Copter::setup()
     // setup initial performance counters
     perf_info_reset();
     fast_loopTimer = AP_HAL::micros();
+    _loop_perf = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "main_loop");
+    _wait_for_sample_perf = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "wait_for_sample");
+    _read_ahrs_perf = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "read_ahrs");
+    _rate_ctrl_perf = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "rate_ctrl");
+    _motors_output_perf = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "motors_output");
+    _read_inertia_perf = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "read_inertia");
 }
 
 /*
@@ -218,9 +224,11 @@ void Copter::perf_update(void)
 
 void Copter::loop()
 {
+    hal.util->perf_begin(_loop_perf);
+    hal.util->perf_begin(_wait_for_sample_perf);
     // wait for an INS sample
     ins.wait_for_sample();
-
+    hal.util->perf_end(_wait_for_sample_perf);
     uint32_t timer = micros();
 
     // check loop time
@@ -247,6 +255,7 @@ void Copter::loop()
     // call until scheduler.tick() is called again
     uint32_t time_available = (timer + MAIN_LOOP_MICROS) - micros();
     scheduler.run(time_available);
+    hal.util->perf_end(_loop_perf);
 }
 
 
@@ -256,21 +265,28 @@ void Copter::fast_loop()
 
     // IMU DCM Algorithm
     // --------------------
+    hal.util->perf_begin(_read_ahrs_perf);
     read_AHRS();
-
+    hal.util->perf_end(_read_ahrs_perf);
     // run low level rate controllers that only require IMU data
+    hal.util->perf_begin(_rate_ctrl_perf);
     attitude_control.rate_controller_run();
+    hal.util->perf_end(_rate_ctrl_perf);
     
 #if FRAME_CONFIG == HELI_FRAME
     update_heli_control_dynamics();
 #endif //HELI_FRAME
 
     // send outputs to the motors library
+    hal.util->perf_begin(_motors_output_perf);
     motors_output();
+    hal.util->perf_end(_motors_output_perf);
 
     // Inertial Nav
     // --------------------
+    hal.util->perf_begin(_read_inertia_perf);
     read_inertia();
+    hal.util->perf_end(_read_inertia_perf);
 
     // check if ekf has reset target heading
     check_ekf_yaw_reset();

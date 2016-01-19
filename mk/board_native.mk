@@ -27,7 +27,7 @@ COPTS           =   -ffunction-sections -fdata-sections -fsigned-char
 ASOPTS          =   -x assembler-with-cpp 
 
 # features: TODO detect dependecy and make them optional
-HAVE_LTTNG=
+HAVE_LTTNG=1
 
 ifeq ($(HAVE_LTTNG),1)
 DEFINES        += -DPERF_LTTNG=1

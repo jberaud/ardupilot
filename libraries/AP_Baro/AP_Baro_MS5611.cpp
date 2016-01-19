@@ -177,6 +177,8 @@ AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_SerialBus *serial, bool use_tim
     _D1(0.0f),
     _D2(0.0f)
 {
+    _baro_timer_perf = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "baro_ms56xx_timer");
+    _baro_update_perf = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "baro_ms56xx_update");
 }
 
 void AP_Baro_MS56XX::_init()
@@ -310,13 +312,16 @@ bool AP_Baro_MS5637::_read_prom(uint16_t prom[8])
 */
 void AP_Baro_MS56XX::_timer(void)
 {
+    hal.util->perf_begin(_baro_timer_perf);
     // Throttle read rate to 100hz maximum.
     if (!_timesliced &&
         AP_HAL::micros() - _last_timer < 10000) {
+        hal.util->perf_end(_baro_timer_perf);
         return;
     }
 
     if (!_serial->sem_take_nonblocking()) {
+        hal.util->perf_end(_baro_timer_perf);
         return;
     }
 
@@ -377,10 +382,12 @@ void AP_Baro_MS56XX::_timer(void)
 
     _last_timer = AP_HAL::micros();
     _serial->sem_give();
+    hal.util->perf_end(_baro_timer_perf);
 }
 
 void AP_Baro_MS56XX::update()
 {
+    hal.util->perf_begin(_baro_update_perf);
     if (!_use_timer) {
         // if we're not using the timer then accumulate one more time
         // to cope with the calibration loop and minimise lag
@@ -388,6 +395,7 @@ void AP_Baro_MS56XX::update()
     }
 
     if (!_updated) {
+        hal.util->perf_end(_baro_update_perf);
         return;
     }
     uint32_t sD1, sD2;
@@ -410,6 +418,7 @@ void AP_Baro_MS56XX::update()
         _D2 = ((float)sD2) / d2count;
     }
     _calculate();
+    hal.util->perf_end(_baro_update_perf);
 }
 
 /* MS5611 class */

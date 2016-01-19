@@ -114,6 +114,8 @@ private:
 
     bool _fifo_mode;
     uint8_t *_samples = nullptr;
+    AP_HAL::Util::perf_counter_t _imu_update_perf;
+    AP_HAL::Util::perf_counter_t _imu_timer_perf;
 };
 
 class AP_MPU6000_BusDriver_SPI : public AP_MPU6000_BusDriver
@@ -160,6 +162,8 @@ private:
     AP_HAL::I2CDriver *_i2c;
     AP_HAL::Semaphore *_i2c_sem;
     uint8_t _rx[MAX_DATA_READ];
+    AP_HAL::Util::perf_counter_t _imu_read_fifo_count_perf;
+    AP_HAL::Util::perf_counter_t _imu_read_fifo_perf;
 };
 
 

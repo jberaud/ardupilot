@@ -102,6 +102,8 @@ protected:
     uint16_t                 _c1,_c2,_c3,_c4,_c5,_c6;
     float                    _D1,_D2;
     uint8_t _instance;
+    AP_HAL::Util::perf_counter_t _baro_timer_perf;
+    AP_HAL::Util::perf_counter_t _baro_update_perf;
 };
 
 class AP_Baro_MS5611 : public AP_Baro_MS56XX

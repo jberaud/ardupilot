@@ -316,7 +316,10 @@ AP_MPU6000_BusDriver_I2C::AP_MPU6000_BusDriver_I2C(AP_HAL::I2CDriver *i2c, uint8
     _addr(addr),
     _i2c(i2c),
     _i2c_sem(NULL)
-{}
+{
+    _imu_read_fifo_count_perf = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "imu_read_fifo_count");
+    _imu_read_fifo_perf = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "imu_read_fifo");
+}
 
 void AP_MPU6000_BusDriver_I2C::init()
 {
@@ -369,7 +372,9 @@ void AP_MPU6000_BusDriver_I2C::read_data_transaction(uint8_t *samples,
 	uint16_t bytes_read;
     uint8_t ret = 0;
 
+    hal.util->perf_begin(_imu_read_fifo_count_perf);
     ret = _i2c->readRegisters(_addr, MPUREG_FIFO_COUNTH, 2, _rx);
+    hal.util->perf_end(_imu_read_fifo_count_perf);
     if(ret != 0) {
         hal.console->printf("MPU6000: error in i2c read\n");
         n_samples = 0;
@@ -396,7 +401,9 @@ void AP_MPU6000_BusDriver_I2C::read_data_transaction(uint8_t *samples,
         return;
     }
     else {
+        hal.util->perf_begin(_imu_read_fifo_perf);
         ret = _i2c->readRegisters(_addr, MPUREG_FIFO_R_W, n_samples * MPU6000_SAMPLE_SIZE, _rx);
+        hal.util->perf_end(_imu_read_fifo_perf);
     }
 
     if(ret != 0) {
@@ -443,7 +450,8 @@ AP_InertialSensor_MPU6000::AP_InertialSensor_MPU6000(AP_InertialSensor &imu, AP_
     _temp_filter(1000, 1),
     _samples(NULL)
 {
-
+    _imu_update_perf = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "imu_mpu6000_update");
+    _imu_timer_perf = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "imu_mpu6000_timer");
 }
 
 AP_InertialSensor_MPU6000::~AP_InertialSensor_MPU6000()
@@ -598,7 +606,8 @@ void AP_InertialSensor_MPU6000::start()
   process any 
  */
 bool AP_InertialSensor_MPU6000::update( void )
-{    
+{
+    hal.util->perf_begin(_imu_update_perf);
     update_accel(_accel_instance);
     update_gyro(_gyro_instance);
 
@@ -606,6 +615,7 @@ bool AP_InertialSensor_MPU6000::update( void )
     
     /* give the temperature to the control loop in order to keep it constant*/
     hal.util->set_imu_temp(_temp_filtered);
+    hal.util->perf_end(_imu_update_perf);
 
     return true;
 }
@@ -643,13 +653,16 @@ bool AP_InertialSensor_MPU6000::_data_ready()
  */
 void AP_InertialSensor_MPU6000::_poll_data(void)
 {
+    hal.util->perf_begin(_imu_timer_perf);
     if (!_bus_sem->take_nonblocking()) {
+        hal.util->perf_end(_imu_timer_perf);
         return;
     }
     if (_fifo_mode || _data_ready()) {
         _read_data_transaction();
     }
     _bus_sem->give();
+    hal.util->perf_end(_imu_timer_perf);
 }
 
 void AP_InertialSensor_MPU6000::_accumulate(uint8_t *samples, uint8_t n_samples)

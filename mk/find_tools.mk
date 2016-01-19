@@ -47,13 +47,13 @@ ARM_GDB     :=  $(call FIND_TOOL,arm-none-eabi-gdb)
 ARM_OBJCOPY :=  $(call FIND_TOOL,arm-none-eabi-objcopy)
 
 # toolchains for beagleboneblack
-BBONE_CXX     :=  arm-linux-gnueabihf-g++
-BBONE_CC      :=  arm-linux-gnueabihf-gcc
-BBONE_AS      :=  arm-linux-gnueabihf-gcc
-BBONE_AR      :=  ar
-BBONE_LD      :=  arm-linux-gnueabihf-g++
-BBONE_GDB     :=  gdb
-BBONE_OBJCOPY :=  objcopy
+BBONE_CXX     :=  arm-linux-gnueabihf-g++-5
+BBONE_CC      :=  arm-linux-gnueabihf-gcc-5
+BBONE_AS      :=  arm-linux-gnueabihf-gcc-5
+BBONE_AR      :=  arm-linux-gnueabihf-ar-5
+BBONE_LD      :=  arm-linux-gnueabihf-g++-5
+BBONE_GDB     :=  arm-linux-gnueabihf-gdb-5
+BBONE_OBJCOPY :=  arm-linux-gnueabihf-obj-5
 
 # toolchains for Raspberry Pi
 RPI_CXX     :=  arm-linux-gnueabihf-g++

@@ -67,6 +67,8 @@ AP_Compass_AK8963::AP_Compass_AK8963(Compass &compass, AP_AK8963_SerialBus *bus)
     _last_accum_time(0),
     _bus(bus)
 {
+    _compass_timer_perf = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "compass_ak8963_timer");
+    _compass_read_perf = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "compass_ak8963_read");
     _reset_filter();
 }
 
@@ -178,11 +180,14 @@ fail_sem:
 
 void AP_Compass_AK8963::read()
 {
+    hal.util->perf_begin(_compass_read_perf);
     if (!_initialized) {
+        hal.util->perf_end(_compass_read_perf);
         return;
     }
 
     if (_accum_count == 0) {
+        hal.util->perf_end(_compass_read_perf);
         /* We're not ready to publish*/
         return;
     }
@@ -193,6 +198,7 @@ void AP_Compass_AK8963::read()
     _reset_filter();
     hal.scheduler->resume_timer_procs();
     publish_filtered_field(field, _compass_instance);
+    hal.util->perf_end(_compass_read_perf);
 }
 
 Vector3f AP_Compass_AK8963::_get_filtered_field() const
@@ -230,6 +236,8 @@ void AP_Compass_AK8963::_update()
     // get raw_field - sensor frame, uncorrected
     Vector3f raw_field;
     uint32_t time_us = AP_HAL::micros();
+
+    hal.util->perf_begin(_compass_timer_perf);
 
     if (!_timesliced &&
         AP_HAL::micros() - _last_update_timestamp < 10000) {
@@ -289,6 +297,7 @@ void AP_Compass_AK8963::_update()
 fail:
     _sem_give();
 end:
+    hal.util->perf_end(_compass_timer_perf);
     return;
 }
 

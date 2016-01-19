@@ -561,6 +561,13 @@ private:
     } gndeffect_state;
 #endif // GNDEFFECT_COMPENSATION == ENABLED
 
+    AP_HAL::Util::perf_counter_t _loop_perf;
+    AP_HAL::Util::perf_counter_t _wait_for_sample_perf;
+    AP_HAL::Util::perf_counter_t _read_ahrs_perf;
+    AP_HAL::Util::perf_counter_t _rate_ctrl_perf;
+    AP_HAL::Util::perf_counter_t _motors_output_perf;
+    AP_HAL::Util::perf_counter_t _read_inertia_perf;
+
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];

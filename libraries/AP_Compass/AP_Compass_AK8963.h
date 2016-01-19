@@ -84,6 +84,8 @@ private:
     uint32_t            _last_update_timestamp;
     uint32_t            _last_accum_time;
     bool                _timesliced;
+    AP_HAL::Util::perf_counter_t _compass_timer_perf;
+    AP_HAL::Util::perf_counter_t _compass_read_perf;
 
     AP_AK8963_SerialBus *_bus = nullptr;
     AP_HAL::Semaphore *_bus_sem;
