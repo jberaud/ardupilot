@@ -5,6 +5,7 @@ from collections import OrderedDict
 import sys
 
 import waflib
+import os
 
 _board_classes = {}
 
@@ -276,6 +277,11 @@ class bebop(linux):
 
     def configure_env(self, cfg, env):
         super(bebop, self).configure_env(cfg, env)
+        os.environ["PKG_CONFIG_PATH"] = '/usr/lib/arm-linux-gnueabihf/pkgconfig'
+        libiio = cfg.check_cfg(package='libiio', mandatory=False)
+        if libiio:
+            cfg.define('LIBIIO', True)
+            env.LIB += ['iio']
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BEBOP',
