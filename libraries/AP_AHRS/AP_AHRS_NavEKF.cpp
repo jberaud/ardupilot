@@ -135,6 +135,8 @@ void AP_AHRS_NavEKF::update_EKF1(void)
             pitch = eulers.y;
             yaw   = eulers.z;
 
+            EKF1.getQuaternion(quaternion);
+
             update_cd_values();
             update_trig();
 
@@ -208,6 +210,8 @@ void AP_AHRS_NavEKF::update_EKF2(void)
             roll  = eulers.x;
             pitch = eulers.y;
             yaw   = eulers.z;
+
+            EKF2.getQuaternion(quaternion);
 
             update_cd_values();
             update_trig();

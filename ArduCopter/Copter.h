@@ -89,6 +89,7 @@
 #include <AP_RPM/AP_RPM.h>
 #include <AC_InputManager/AC_InputManager.h>        // Pilot input handling library
 #include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
+#include <libtelemetry.h> // library to export data to other processes
 
 // Configuration
 #include "defines.h"
@@ -180,6 +181,7 @@ private:
     NavEKF EKF{&ahrs, barometer, sonar};
     NavEKF2 EKF2{&ahrs, barometer, sonar};
     AP_AHRS_NavEKF ahrs{ins, barometer, gps, sonar, EKF, EKF2, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    struct tlm_producer *tlm_producer;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL sitl;
@@ -594,6 +596,8 @@ private:
     void update_simple_mode(void);
     void update_super_simple_bearing(bool force_update);
     void read_AHRS(void);
+    void init_shared_data(void);
+    void push_shared_data(void);
     void update_altitude();
     void set_home_state(enum HomeState new_home_state);
     bool home_is_set();

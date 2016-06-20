@@ -300,10 +300,14 @@ class bebop(linux):
 
         env.LIB += cfg.env.LIB_LIBIIO
 
+        env.LIB += [
+                'telemetry'
+                ]
+
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BEBOP',
         )
-        env.STATIC_LINKING = True
+        env.STATIC_LINKING = False
 
 class raspilot(linux):
     toolchain = 'arm-linux-gnueabihf'

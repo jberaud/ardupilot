@@ -198,6 +198,8 @@ public:
     float pitch;
     float yaw;
 
+    Quaternion quaternion;
+
     // integer Euler angles (Degrees * 100)
     int32_t roll_sensor;
     int32_t pitch_sensor;

@@ -171,6 +171,8 @@ void Copter::setup()
     // setup initial performance counters
     perf_info_reset();
     fast_loopTimer = AP_HAL::micros();
+
+    init_shared_data();
 }
 
 /*
@@ -605,6 +607,8 @@ void Copter::read_AHRS(void)
 #endif
 
     ahrs.update();
+
+    push_shared_data();
 }
 
 // read baro and sonar altitude at 10hz
@@ -620,6 +624,56 @@ void Copter::update_altitude()
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
     }
+}
+
+void Copter::push_shared_data(void)
+{
+    struct timespec ts;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    tlm_producer_put_sample(tlm_producer, &ts);
+}
+
+void Copter::init_shared_data(void)
+{
+    struct tlm_producer *tlm_prod;
+    int ret;
+    const struct tlm_producer_reg_entry entries[] = {
+       {
+       .ptr = &ahrs.quaternion,
+	   .name = "IMU_body_flight_quaternion",
+	   .type = TLM_TYPE_FLOAT32,
+	   .size = sizeof(float),
+	   .count = 4,
+	   .flags = 0,
+       }
+	};
+
+    tlm_prod = tlm_producer_new("user_telemetry", 10, 2500);
+	if (tlm_prod == NULL) {
+        hal.console->printf("failed to create telemetry prod\n");
+		goto error;
+	}
+
+    ret = tlm_producer_reg_array(tlm_prod, entries, ARRAY_SIZE(entries));
+	if (ret < 0) {
+		hal.console->printf("tlm_producer_reg_array error: %s", strerror(-ret));
+		goto error;
+	}
+
+	ret = tlm_producer_reg_complete(tlm_prod);
+	if (ret < 0) {
+		hal.console->printf("tlm_producer_reg_complete error: %s", strerror(-ret));
+		goto error;
+	}
+
+	tlm_producer = tlm_prod;
+	return;
+error:
+	if (tlm_prod) {
+		tlm_producer_destroy(tlm_prod);
+    }
+    return;
 }
 
 AP_HAL_MAIN_CALLBACKS(&copter);
