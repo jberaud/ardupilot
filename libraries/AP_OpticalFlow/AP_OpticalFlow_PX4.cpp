@@ -34,8 +34,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_OpticalFlow_PX4::AP_OpticalFlow_PX4(OpticalFlow &_frontend) : 
-OpticalFlow_backend(_frontend) 
+AP_OpticalFlow_PX4::AP_OpticalFlow_PX4(OpticalFlow &_frontend)
 {}
 
 

@@ -42,6 +42,7 @@ AP_OpticalFlow_Linux::AP_OpticalFlow_Linux(OpticalFlow &_frontend, AP_HAL::OwnPt
     : OpticalFlow_backend(_frontend)
     , _dev(std::move(dev))
 {
+    _sem = hal.util->new_semaphore();
 }
 
 void AP_OpticalFlow_Linux::init(void)

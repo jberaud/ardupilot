@@ -83,4 +83,7 @@ private:
 
     optical_flow_s report;
     bool new_report;
+
+    // semaphore for access to shared frontend data
+    AP_HAL::Semaphore *_sem;
 };
