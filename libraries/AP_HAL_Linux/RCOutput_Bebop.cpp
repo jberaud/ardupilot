@@ -234,12 +234,12 @@ void RCOutput_Bebop::_read_obs_data()
             break;
         }
 
-        // log to DataFlash
-        DataFlash_Class::instance()->Log_Write("RPMBEBOP", "TimeUS,rpm1,rpm2,"
-                "rpm3,rpm4",
-                "Qffff", now, (double) _obs.rpm[0], (double) _obs.rpm[1],
-                _obs.rpm[2], _obs.rpm[3]);
     }
+
+    // log to DataFlash
+    DataFlash_Class::instance()->Log_Write("RPMBEBOP", "TimeUS,rpm1,rpm2,rpm3,rpm4",
+            "Qffff", now, (double) _obs.rpm[0], (double) _obs.rpm[1],
+            (double) _obs.rpm[2], (double) _obs.rpm[3]);
 
     _obs.batt_mv = be16toh(data.batt_mv);
     _obs.status = data.status;
