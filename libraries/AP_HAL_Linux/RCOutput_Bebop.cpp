@@ -15,6 +15,7 @@
 
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
+#include <DataFlash/DataFlash.h>
 
 #include "Util.h"
 
@@ -184,6 +185,8 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
 #endif
         uint8_t     checksum;
     } data;
+    // Calculate time in seconds since last update
+    uint64_t now = AP_HAL::micros64();
 
     memset(&data, 0, sizeof(data));
     if (!_dev->get_semaphore()->take(0)) {
@@ -209,27 +212,26 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
         if (obs.rpm[i] == 0) {
             obs.rpm_saturated[i] = 0;
         }
-#if 0
-        printf("rpm %u %u %u %u status 0x%02x temp %u\n",
-               obs.rpm[i], _rpm[0], _period_us[0], _period_us_to_rpm(_period_us[0]),
-               (unsigned)data.status,
-               (unsigned)data.temp);
-#endif
+        // sync our state from status. This makes us more robust to i2c errors
+        enum BLDC_STATUS bldc_status = (enum BLDC_STATUS)(data.status & 0x0F);
+        switch (bldc_status) {
+        case BEBOP_BLDC_STATUS_STOPPED:
+        case BEBOP_BLDC_STATUS_RAMPDOWN:
+            _state = BEBOP_BLDC_STOPPED;
+            break;
+        case BEBOP_BLDC_STATUS_RAMPUP:
+        case BEBOP_BLDC_STATUS_RUNNING:
+            _state = BEBOP_BLDC_STARTED;
+            break;
+        }
+
+        // log to DataFlash
+        DataFlash_Class::instance()->Log_Write("RPMBEBOP", "TimeUS,rpm1,rpm2,"
+                "rpm3,rpm4",
+                "Qffff", now, (double) obs.rpm[0], (double) obs.rpm[1],
+                obs.rpm[2], obs.rpm[3]);
     }
 
-    // sync our state from status. This makes us more robust to i2c errors
-    enum BLDC_STATUS bldc_status = (enum BLDC_STATUS)(data.status & 0x0F);
-    switch (bldc_status) {
-    case BEBOP_BLDC_STATUS_STOPPED:
-    case BEBOP_BLDC_STATUS_RAMPDOWN:
-        _state = BEBOP_BLDC_STOPPED;
-        break;
-    case BEBOP_BLDC_STATUS_RAMPUP:
-    case BEBOP_BLDC_STATUS_RUNNING:
-        _state = BEBOP_BLDC_STARTED;
-        break;
-    }
-    
     obs.batt_mv = be16toh(data.batt_mv);
     obs.status = data.status;
     obs.error = data.error;
