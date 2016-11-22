@@ -88,6 +88,8 @@ private:
     bool     _corking = false;
     uint16_t _max_rpm;
 
+    BebopBLDC_ObsData _obs;
+
     uint8_t _checksum(uint8_t *data, unsigned int len);
     void _start_prop();
     void _toggle_gpio(uint8_t mask);
@@ -104,6 +106,7 @@ private:
     pthread_cond_t _cond;
     void _run_rcout();
     static void *_control_thread(void *arg);
+    void _read_obs_data();
 };
 
 }

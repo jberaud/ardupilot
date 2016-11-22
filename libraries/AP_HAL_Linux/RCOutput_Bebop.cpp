@@ -166,6 +166,14 @@ bool RCOutput_Bebop::_get_info(struct bldc_info *info)
 
 int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
 {
+    pthread_mutex_lock(&_mutex);
+    obs = _obs;
+    pthread_mutex_unlock(&_mutex);
+    return 0;
+}
+
+void RCOutput_Bebop::_read_obs_data()
+{
     /*
       the structure returned is different on the Disco from the Bebop
      */
@@ -190,27 +198,28 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
 
     memset(&data, 0, sizeof(data));
     if (!_dev->get_semaphore()->take(0)) {
-        return -EBUSY;
+        return;
     }
 
     _dev->read_registers(BEBOP_BLDC_GETOBSDATA, (uint8_t *)&data, sizeof(data));
     _dev->get_semaphore()->give();
 
     if (data.checksum != _checksum((uint8_t*)&data, sizeof(data)-1)) {
-        return -EBUSY;
+        return;
     }
 
-    memset(&obs, 0, sizeof(obs));
+    pthread_mutex_lock(&_mutex);
+    memset(&_obs, 0, sizeof(_obs));
     
-    /* fill obs class */
+    /* fill _obs class */
     for (uint8_t i = 0; i < _n_motors; i++) {
         /* extract 'rpm saturation bit' */
-        obs.rpm_saturated[i] = (data.rpm[i] & (1 << 7)) ? 1 : 0;
+        _obs.rpm_saturated[i] = (data.rpm[i] & (1 << 7)) ? 1 : 0;
         /* clear 'rpm saturation bit' */
         data.rpm[i] &= (uint16_t)(~(1 << 7));
-        obs.rpm[i] = be16toh(data.rpm[i]);
-        if (obs.rpm[i] == 0) {
-            obs.rpm_saturated[i] = 0;
+        _obs.rpm[i] = be16toh(data.rpm[i]);
+        if (_obs.rpm[i] == 0) {
+            _obs.rpm_saturated[i] = 0;
         }
         // sync our state from status. This makes us more robust to i2c errors
         enum BLDC_STATUS bldc_status = (enum BLDC_STATUS)(data.status & 0x0F);
@@ -228,17 +237,16 @@ int RCOutput_Bebop::read_obs_data(BebopBLDC_ObsData &obs)
         // log to DataFlash
         DataFlash_Class::instance()->Log_Write("RPMBEBOP", "TimeUS,rpm1,rpm2,"
                 "rpm3,rpm4",
-                "Qffff", now, (double) obs.rpm[0], (double) obs.rpm[1],
-                obs.rpm[2], obs.rpm[3]);
+                "Qffff", now, (double) _obs.rpm[0], (double) _obs.rpm[1],
+                _obs.rpm[2], _obs.rpm[3]);
     }
 
-    obs.batt_mv = be16toh(data.batt_mv);
-    obs.status = data.status;
-    obs.error = data.error;
-    obs.motors_err = data.motors_err;
-    obs.temperature = data.temp;
-
-    return 0;
+    _obs.batt_mv = be16toh(data.batt_mv);
+    _obs.status = data.status;
+    _obs.error = data.error;
+    _obs.motors_err = data.motors_err;
+    _obs.temperature = data.temp;
+    pthread_mutex_unlock(&_mutex);
 }
 
 void RCOutput_Bebop::_toggle_gpio(uint8_t mask)
@@ -567,6 +575,8 @@ void RCOutput_Bebop::_run_rcout()
             }
             _set_ref_speed(_rpm);
         }
+
+        _read_obs_data();
     }
 }
 
