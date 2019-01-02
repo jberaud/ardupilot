@@ -140,7 +140,7 @@ def ap_common_checks(cfg):
         msg="Checking for HAVE_MEMRCHR",
         mandatory=False,
     )
-    
+
 @conf
 def check_librt(cfg, env):
     if cfg.env.DEST_OS == 'darwin':
@@ -182,14 +182,6 @@ def check_package(cfg, env, libname):
         cfg.env.revert()
         return False
 
-    if not cfg.check(compiler='cxx',
-            fragment='''int main() { return 0; }''',
-            msg='Checking link with %s' % libname,
-            mandatory=False,
-            lib=libname,
-            use=capsname):
-        cfg.env.revert()
-        return False
 
     cfg.env.commit()
 
@@ -216,10 +208,6 @@ def check_lttng(cfg, env):
 
 @conf
 def check_libiio(cfg, env):
-    if cfg.env.STATIC_LINKING:
-        # libiio depends on libdl which means it can't be used in a static build
-        cfg.msg("Checking for 'libiio':", 'disabled for static build', color='YELLOW')
-        return False
     if cfg.options.disable_libiio:
         cfg.msg("Checking for 'libiio':", 'disabled', color='YELLOW')
         return False
@@ -248,7 +236,7 @@ def check_SFML(cfg, env):
                          global_define=True):
             cfg.fatal("Missing SFML libraries - please install libsfml-dev")
             return False
-    
+
     # see if we need Graphics.hpp or Graphics.h
     if not cfg.check(compiler='cxx',
                      fragment='''#include <SFML/Graphics.hpp>\nint main() {}''', define_name="HAVE_SFML_GRAPHICS_HPP",
